@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU (START SCREEN VỚI HIỆU ỨNG POPUP VÀ SÓNG LAN TỎA) ====================
+// ==================== MÀN HÌNH BẮT ĐẦU (GỢN SÓNG SIÊU MỜ + POPUP CHẬM RÃI) ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,7 +106,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 40%, #0d2853 0%, #06122a 75%, #030a18 100%)",
+        background: "radial-gradient(circle at 50% 42%, #0a2347 0%, #06122a 65%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -116,52 +116,75 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         color: "#edf5ff"
       }}
     >
-      {/* CSS CỦA HIỆU ỨNG POP-UP VÀ SÓNG LAN TỎA TỪ TÂM LOGO */}
       <style>{`
-        @keyframes ripple-wave {
+        /* GỢN SÓNG SIÊU MỜ, HÒA VÀO NỀN, KHÔNG GẮNG RÕ */
+        @keyframes soft-ripple {
           0% {
-            transform: scale(0.6);
-            opacity: 0.9;
+            transform: scale(0.65);
+            opacity: 0.18;
           }
-          50% {
-            opacity: 0.45;
+          45% {
+            opacity: 0.08;
           }
           100% {
-            transform: scale(2.6);
+            transform: scale(3.2);
             opacity: 0;
           }
         }
-        @keyframes logo-pop {
+
+        /* LOGO XUẤT HIỆN POP-UP CHẬM RÃI (2.4 GIÂY) MƯỢT NHƯ GIẤC MƠ */
+        @keyframes logo-bloom-slow {
           0% {
-            transform: scale(0.25);
+            transform: scale(0.35) translateY(16px);
             opacity: 0;
+            filter: blur(8px) drop-shadow(0 0 0px transparent);
           }
-          65% {
-            transform: scale(1.12);
-            opacity: 1;
+          60% {
+            opacity: 0.85;
+            filter: blur(1.5px) drop-shadow(0 0 16px rgba(154, 212, 255, 0.25));
+          }
+          85% {
+            transform: scale(1.03) translateY(-2px);
+            opacity: 0.98;
+            filter: blur(0) drop-shadow(0 0 24px rgba(154, 212, 255, 0.35));
           }
           100% {
-            transform: scale(1);
+            transform: scale(1) translateY(0);
             opacity: 1;
+            filter: blur(0) drop-shadow(0 0 20px rgba(154, 212, 255, 0.28));
           }
         }
-        .ripple-ring {
+
+        /* HIỆU ỨNG HIỆN CHẬM CHO CHỮ VÀ NÚT */
+        @keyframes content-fade-slow {
+          0% {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .ethereal-ripple {
           position: absolute;
           border-radius: 50%;
-          border: 1.5px solid rgba(173, 214, 255, 0.4);
-          box-shadow: 0 0 25px rgba(154, 212, 255, 0.35);
+          border: 1px solid rgba(173, 214, 255, 0.08);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.04) 0%, transparent 72%);
+          filter: blur(2.5px);
           pointer-events: none;
         }
       `}</style>
 
-      {/* KHUNG CHỨA LOGO VÀ SÓNG NƯỚC LAN RA */}
-      <div style={{ position: "relative", width: "160px", height: "160px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
-        {/* 3 Lớp sóng lan tỏa từ chính giữa logo */}
-        <div className="ripple-ring" style={{ width: "120px", height: "120px", animation: "ripple-wave 3s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
-        <div className="ripple-ring" style={{ width: "120px", height: "120px", animation: "ripple-wave 3s cubic-bezier(0, 0.2, 0.8, 1) infinite 1s" }} />
-        <div className="ripple-ring" style={{ width: "120px", height: "120px", animation: "ripple-wave 3s cubic-bezier(0, 0.2, 0.8, 1) infinite 2s" }} />
+      {/* VÙNG CHỨA LOGO VÀ SÓNG MỜ ẢO */}
+      <div style={{ position: "relative", width: "170px", height: "170px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
+        {/* 3 Lớp sóng lan tỏa cực kỳ mờ, gần như hòa vào background */}
+        <div className="ethereal-ripple" style={{ width: "135px", height: "135px", animation: "soft-ripple 4.5s ease-out infinite 0s" }} />
+        <div className="ethereal-ripple" style={{ width: "135px", height: "135px", animation: "soft-ripple 4.5s ease-out infinite 1.5s" }} />
+        <div className="ethereal-ripple" style={{ width: "135px", height: "135px", animation: "soft-ripple 4.5s ease-out infinite 3.0s" }} />
 
-        {/* LOGO ĐÈ LÊN SÓNG VỚI HIỆU ỨNG POP-UP */}
+        {/* LOGO NỞ CHẬM ĐÈ LÊN SÓNG */}
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
@@ -171,56 +194,57 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             objectFit: "contain", 
             position: "relative", 
             zIndex: 10,
-            filter: "drop-shadow(0 0 25px rgba(162, 218, 255, 0.5))",
-            animation: "logo-pop 1s cubic-bezier(0.34, 1.56, 0.64, 1) both"
+            animation: "logo-bloom-slow 2.4s cubic-bezier(0.16, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN TRANG WEB */}
-      <h1 style={{ 
-        fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
-        fontSize: "clamp(2.5rem, 6vw, 3.8rem)", 
-        margin: "0 0 0.5rem",
-        letterSpacing: "0.04em",
-        color: "#f1f8ff",
-        textShadow: "0 0 20px rgba(173, 214, 255, 0.3)"
-      }}>
-        la Lapine
-      </h1>
+      {/* PHẦN CHỮ VÀ NÚT XUẤT HIỆN SAU MỘT NHỊP RẤT ÊM ÁI */}
+      <div style={{ animation: "content-fade-slow 1.8s ease-out 0.8s both" }}>
+        <h1 style={{ 
+          fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
+          fontSize: "clamp(2.5rem, 6vw, 3.8rem)", 
+          margin: "0 0 0.5rem",
+          letterSpacing: "0.04em",
+          color: "#f1f8ff",
+          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
+        }}>
+          la Lapine
+        </h1>
 
-      {/* DÒNG CHÚ THÍCH CẢNH BÁO DƯỚI 18 TUỔI */}
-      <p style={{ 
-        fontSize: "12px", 
-        color: "#9db8d4", 
-        margin: "0 0 2.2rem",
-        letterSpacing: "0.08em",
-        textTransform: "lowercase",
-        fontFamily: '"DM Mono", monospace',
-        opacity: 0.85
-      }}>
-        không dành cho người dưới 18 tuổi.
-      </p>
+        <p style={{ 
+          fontSize: "12px", 
+          color: "#9db8d4", 
+          margin: "0 0 2.2rem",
+          letterSpacing: "0.08em",
+          textTransform: "lowercase",
+          fontFamily: '"DM Mono", monospace',
+          opacity: 0.8
+        }}>
+          không dành cho người dưới 18 tuổi.
+        </p>
 
-      {/* NÚT BẮT ĐẦU HÀNH TRÌNH */}
-      <button 
-        className="primary-button" 
-        onClick={onStart}
-        style={{
-          minHeight: "48px",
-          padding: "0 2rem",
-          fontSize: "13px",
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          borderRadius: "999px",
-          boxShadow: "0 0 25px rgba(185, 221, 255, 0.4)",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "8px"
-        }}
-      >
-        <Sparkles size={15} /> Bắt đầu hành trình
-      </button>
+        <button 
+          className="primary-button" 
+          onClick={onStart}
+          style={{
+            minHeight: "48px",
+            padding: "0 2.2rem",
+            fontSize: "12.5px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            borderRadius: "999px",
+            boxShadow: "0 0 25px rgba(185, 221, 255, 0.3)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
+            transition: "all 0.3s ease"
+          }}
+        >
+          <Sparkles size={14} /> Bắt đầu hành trình
+        </button>
+      </div>
     </div>
   );
 }
@@ -454,7 +478,6 @@ function CharacterCard({ character, onOpen, favorite, onFavorite }: { character:
           <Heart size={16} fill={favorite ? "currentColor" : "none"} />
         </button>
 
-        {/* KHUNG THÔNG TIN ĐÈ TRỰC TIẾP LÊN ẢNH */}
         <div 
           style={{
             position: "absolute",
@@ -822,7 +845,6 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
   );
 }
 
-// BỘ SOẠN THẢO TRONG STUDIO
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   useEffect(() => { 
@@ -876,10 +898,10 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
     if (MASTER_PASSWORDS.includes(clean)) { onUnlock(); return; }
     try { const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); } catch { setError("Mật khẩu không chính xác."); }
   };
-  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu (jk0807)" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
+  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Nhập mật khẩu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
 }
 
-// ==================== WORKSPACE VỚI TÍNH NĂNG QUẢN LÝ TAGS THÔNG MINH ====================
+// ==================== WORKSPACE ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
@@ -1484,7 +1506,6 @@ export default function Home() {
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
 
-  // TRẠNG THÁI MÀN HÌNH BẮT ĐẦU (START SCREEN)
   const [hasEntered, setHasEntered] = useState(false);
 
   const [characters, setCharacters] = useState<Character[]>(() => {
@@ -1525,7 +1546,7 @@ export default function Home() {
         <StartScreen onStart={() => setHasEntered(true)} />
       )}
 
-      {/* NỘI DUNG CHÍNH CỦA TRANG WEB */}
+      {/* NỘI DUNG CHÍNH */}
       {studio ? (
         <OwnerWorkspace 
           characters={characters} 
