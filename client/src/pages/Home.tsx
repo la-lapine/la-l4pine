@@ -1,15 +1,12 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, Play, Search, SkipBack, SkipForward, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, Play, Search, Volume2, VolumeX, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
-
-// MẬT KHẨU VÀO STUDIO (Bạn có thể đổi chữ 'lapine' thành bất kỳ mật khẩu nào bạn muốn)
-const STUDIO_MASTER_PASSWORD = "lapine";
 
 type Character = {
   id: number;
@@ -39,14 +36,7 @@ type Character = {
 type LoveParticle = { id: number; x: number; y: number; delay: number; rotation: number; scale: number };
 type LoveSpark = { id: number; x: number; y: number; rotation: number; particles: LoveParticle[] };
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
-const rabbitLogo = "/brand/lalapine-rabbit_45b56845.png";
-
-// Danh sách nhạc mặc định phòng khi máy chủ chưa tải nhạc
-const defaultTracks = [
-  { id: 101, title: "Lullaby of the Meadow", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
-  { id: 102, title: "Moonlit Clover", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3" },
-  { id: 103, title: "Whispering Breeze", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f77c30.mp3" }
-];
+const rabbitLogo = "/manus-storage/lalapine-rabbit_45b56845.png";
 
 const fallbackCharacters: Character[] = [
   { id: 201, slug: "mup-sua", name: "Thỏ Múp Sữa", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=86", caption: "Một chiếc bánh sữa mềm đi lạc vào đồng cỏ xanh.", tagsJson: JSON.stringify(["mới ra lò", "mềm", "ấm áp"]), externalUrl: "https://character.ai/", description: "Múp Sữa thích những buổi chiều có nắng nhạt và một chiếc khăn len vừa đủ ấm.", backstory: "Bạn ấy được tìm thấy trong một hộp sữa rỗng, bên cạnh một bông cỏ bốn lá.", firstMessage: "Bạn có muốn chia đôi chiếc bánh này không?", section: "new", favoriteCount: 128 },
@@ -94,167 +84,13 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MUSIC PLAYER CẢI TIẾN ====================
 function MusicPlayer() {
-  const [expanded, setExpanded] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [playlist, setPlaylist] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  const tracksQuery = trpc.tracks.list.useQuery();
-  const serverTracks = tracksQuery.data?.filter((track) => Boolean(track.audioUrl));
-  const tracks = (serverTracks && serverTracks.length > 0) ? serverTracks : defaultTracks;
-
-  // Chọn sẵn 1 bài ngẫu nhiên ngay khi vào trang
-  const [trackIndex, setTrackIndex] = useState(() => Math.floor(Math.random() * tracks.length));
-  const current = tracks[trackIndex] || tracks[0];
-  const audioSrc = useMemo(() => encodeStorageUrl(current?.audioUrl), [current?.audioUrl]);
-
-  const playCurrent = async () => {
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) return;
-    try {
-      if (audio.src !== new URL(audioSrc, window.location.href).href) {
-        audio.src = audioSrc;
-        audio.load();
-      }
-      await audio.play();
-      setPlaying(true);
-    } catch {
-      setPlaying(false);
-    }
-  };
-
-  const playCurrentRef = useRef(playCurrent);
-  playCurrentRef.current = playCurrent;
-  const startedByTapRef = useRef(false);
-
-  // Tự phát ngay khi người dùng chạm/click vào trang lần đầu tiên
-  useEffect(() => {
-    const start = () => {
-      if (startedByTapRef.current) return;
-      startedByTapRef.current = true;
-      void playCurrentRef.current();
-    };
-    document.addEventListener("pointerdown", start, { once: true });
-    document.addEventListener("keydown", start, { once: true });
-    return () => {
-      document.removeEventListener("pointerdown", start);
-      document.removeEventListener("keydown", start);
-    };
-  }, []);
-
-  const gotoTrack = (index: number) => {
-    if (!tracks.length) return;
-    const next = ((index % tracks.length) + tracks.length) % tracks.length;
-    setTrackIndex(next);
-    setPlaying(true);
-  };
-
-  const goNext = () => gotoTrack(trackIndex + 1);
-  const goPrev = () => gotoTrack(trackIndex - 1);
-
-  // Nhảy bài ngẫu nhiên khi hết bài
-  const goRandom = () => {
-    if (tracks.length <= 1) {
-      gotoTrack(0);
-      return;
-    }
-    let next = trackIndex;
-    while (next === trackIndex) {
-      next = Math.floor(Math.random() * tracks.length);
-    }
-    gotoTrack(next);
-  };
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !audioSrc) return;
-    audio.src = audioSrc;
-    audio.load();
-    if (playing) void audio.play().catch(() => setPlaying(false));
-  }, [audioSrc]);
-
-  return (
-    <div className={`music-dock ${expanded ? "expanded" : ""}`}>
-      <audio ref={audioRef} src={audioSrc} onEnded={goRandom} muted={muted} preload="auto" />
-      {/* Icon đĩa nhạc tự xoay liên tục 360 độ - Bấm vào để đóng/mở cửa sổ */}
-      <button 
-        className="music-disc spinning" 
-        onClick={() => setExpanded(!expanded)} 
-        style={{ 
-          animation: "spin 5s linear infinite",
-          cursor: "pointer"
-        }}
-        aria-label={expanded ? "Đóng cửa sổ nhạc" : "Mở cửa sổ nhạc"}
-      >
-        <span>♪</span>
-      </button>
-
-      {expanded && (
-        <div className="music-card" style={{ transition: "max-height 0.3s ease" }}>
-          <div>
-            <span className="eyebrow">la Lapine radio</span>
-            <strong>{current.title}</strong>
-            <small>{current.artist || "la Lapine"}</small>
-          </div>
-          <div className="music-actions">
-            <button onClick={goPrev} disabled={tracks.length <= 1} aria-label="Bài trước">
-              <SkipBack size={15} />
-            </button>
-            <button onClick={() => {
-              if (playing) {
-                audioRef.current?.pause();
-                setPlaying(false);
-              } else void playCurrent();
-            }} aria-label={playing ? "Dừng nhạc" : "Phát nhạc"}>
-              {playing ? <Pause size={15} /> : <Play size={15} />}
-            </button>
-            <button onClick={goNext} disabled={tracks.length <= 1} aria-label="Bài kế tiếp">
-              <SkipForward size={15} />
-            </button>
-            <button onClick={() => setMuted(!muted)} aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}>
-              {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-            </button>
-            <button onClick={() => setPlaylist(!playlist)} className={playlist ? "selected" : ""}>
-              Danh sách nhạc
-            </button>
-          </div>
-
-          {/* Danh sách nhạc có thanh cuộn riêng (Scrollbar) - Chiều cao vừa vặn không tràn khung */}
-          {playlist && (
-            <div 
-              className="playlist-list" 
-              style={{
-                maxHeight: "165px",
-                overflowY: "auto",
-                paddingRight: "6px",
-                marginTop: "10px"
-              }}
-            >
-              {tracks.map((track, index) => (
-                <button 
-                  key={track.id || index} 
-                  onClick={() => {
-                    setTrackIndex(index);
-                    setPlaying(true);
-                  }} 
-                  className={index === trackIndex ? "selected" : ""}
-                >
-                  <span>0{index + 1}</span>
-                  {track.title}
-                  <small>{track.artist || "la Lapine"}</small>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const [expanded, setExpanded] = useState(false); const [playing, setPlaying] = useState(false); const [muted, setMuted] = useState(false); const [playlist, setPlaylist] = useState(false); const audioRef = useRef<HTMLAudioElement>(null);
+  const tracksQuery = trpc.tracks.list.useQuery(); const tracks = tracksQuery.data?.filter((track) => Boolean(track.audioUrl)).length ? tracksQuery.data.filter((track) => Boolean(track.audioUrl)) : [{ id: 0, title: "Chưa có bài nhạc", artist: "Hãy thêm file trong Studio", audioUrl: null, sortOrder: 0 }]; const [trackIndex, setTrackIndex] = useState(0); const current = tracks[trackIndex] || tracks[0]; const audioSrc = useMemo(() => encodeStorageUrl(current?.audioUrl), [current?.audioUrl]);
+  const playCurrent = async () => { const audio = audioRef.current; if (!audio || !audioSrc) { toast.info("Playlist chưa có file âm thanh. Hãy tải nhạc trong Studio."); setExpanded(true); return; } try { if (audio.src !== new URL(audioSrc, window.location.href).href) { audio.src = audioSrc; audio.load(); } await audio.play(); setPlaying(true); } catch { setPlaying(false); toast.error("Không thể phát bài nhạc này. Hãy kiểm tra lại file trong Studio."); } };
+  useEffect(() => { const audio = audioRef.current; if (!audio || !audioSrc) { setPlaying(false); return; } audio.src = audioSrc; audio.load(); if (playing) void audio.play().catch(() => { setPlaying(false); toast.error("Không thể phát bài nhạc này."); }); }, [audioSrc]);
+  return <div className={`music-dock ${expanded ? "expanded" : ""}`}><audio ref={audioRef} src={audioSrc} loop onEnded={() => setPlaying(false)} onError={() => { setPlaying(false); toast.error("File nhạc không thể tải. Hãy tải lại file trong Studio."); }} muted={muted} preload="auto" /><button className={`music-disc ${playing ? "spinning" : ""}`} onClick={() => { setExpanded(!expanded); if (!playing) void playCurrent(); }} aria-label="Mở playlist âm nhạc"><span>♪</span></button>{expanded && <div className="music-card"><div><span className="eyebrow">la Lapine radio</span><strong>{current.title}</strong><small>{current.artist || "la Lapine"}</small></div><div className="music-actions"><button onClick={() => { if (playing) { audioRef.current?.pause(); setPlaying(false); } else void playCurrent(); }} aria-label={playing ? "Dừng nhạc" : "Phát nhạc"}>{playing ? <Pause size={15} /> : <Play size={15} />}</button><button onClick={() => setMuted(!muted)} aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}>{muted ? <VolumeX size={15} /> : <Volume2 size={15} />}</button><button onClick={() => setPlaylist(!playlist)} className={playlist ? "selected" : ""}>Danh sách nhạc</button></div>{playlist && <div className="playlist-list">{tracks.map((track, index) => <button key={track.id} onClick={() => { setTrackIndex(index); setPlaying(true); setExpanded(true); }}><span>0{index + 1}</span>{track.title}<small>{track.artist || "la Lapine"}</small></button>)}</div>}</div>}</div>;
 }
-
 function IntroLayer({ onDone }: { onDone: () => void }) {
   useEffect(() => { const timer = window.setTimeout(onDone, 1700); return () => window.clearTimeout(timer); }, [onDone]);
   return <div className="intro-layer"><div className="intro-ripple ripple-one" /><div className="intro-ripple ripple-two" /><div className="intro-center"><img src={rabbitLogo} alt="la Lapine" /><span className="eyebrow">la Lapine</span><div className="intro-line" /><p>nàng thỏ mộng mơ</p></div><div className="intro-foot">một cánh đồng đang mở <span>01 / 01</span></div></div>;
@@ -311,7 +147,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   const toggleFavorite = (character: Character) => { const next = favorites.includes(character.id) ? favorites.filter((id) => id !== character.id) : [...favorites, character.id]; setFavorites(next); localStorage.setItem("lalapine-favorites", JSON.stringify(next)); favoriteMutation.mutate({ characterId: character.id, visitorId: visitorId() }); };
   useEffect(() => { const onPointerDown = (event: PointerEvent) => { const spark = createLoveSpark(event.clientX, event.clientY); setLoves((current) => [...current.slice(-7), spark]); window.setTimeout(() => setLoves((current) => current.filter((item) => item.id !== spark.id)), 900); }; window.addEventListener("pointerdown", onPointerDown); return () => window.removeEventListener("pointerdown", onPointerDown); }, []);
   const goRandom = () => { const pool = visible.length ? visible : characters; setRandom(pool[Math.floor(Math.random() * pool.length)]); };
-  return <><div className="archive-shell"><SparklesLayer /><LoveLayer loveSparks={loves} /><Header onStudio={onStudio} onNotifications={() => setShowNotifications(true)} notificationCount={unreadCount} /><main className="public-content">{location !== "/archive" && location !== "/meadow" && <section className="hero-section"><div className="hero-copy"><span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span><h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1><div className="hero-meta"><div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div><div><strong>∞</strong><span>giấc mơ</span></div></div></div><div className="hero-art-wrap"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>{latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}<div className="hero-art-label"><span>mới ra gần đây / field 01</span><strong>{latest?.name || "Một chú thỏ mới"}</strong><small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small></div></div></div></section>}{location === "/meadow" && <section className="field-header"><span className="eyebrow">{location === "/meadow" ? "coming to the field" : "the living rabbit field"}</span><h1>{location === "/meadow" ? <>Những chú thỏ<br /><i>đang ủ mầm.</i></> : <>Hôm nay bạn muốn<br /><i>gặp thỏ nào?</i></>}</h1><p>{location === "/meadow" ? "Một vài cái tên đang ngủ dưới lớp cỏ. Chúng sẽ tỉnh dậy khi đến mùa." : "Tìm theo tên, cảm giác hoặc bước vào đồng cỏ bằng một lựa chọn bất ngờ."}</p></section>}{location !== "/meadow" && <section className="search-section" id="archive"><div className="search-intro"><span className="eyebrow"></span><h2>⟡ thỏ nhỏ đang tìm ai?</h2></div><div className="search-tools"><label className="search-box"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên, cảm giác, câu chuyện…" /><span>{visible.length} kết quả</span></label><div className="tag-filter"><div className="tag-filter-heading"><span className="filter-label">tags</span><button className="tag-toggle" aria-label={tagsExpanded ? "Thu gọn tags" : "Mở rộng tags"} onClick={() => setTagsExpanded(!tagsExpanded)}>{tagsExpanded ? "⌃" : "⌄"}</button></div><div className={`tag-scroll ${tagsExpanded ? "expanded" : ""}`}><button className={!tag ? "active" : ""} onClick={() => setTag(null)}>tất cả</button>{allTags.slice(0, tagsExpanded ? allTags.length : 6).map((item) => <button className={tag === item ? "active" : ""} onClick={() => setTag(item)} key={item}>{item}</button>)}</div></div><button className="random-button main-random" onClick={goRandom}><span>𐔌՞. .՞𐦯 hôm nay thỏ nhỏ sẽ gặp được ai đây .ᐣ.ᐟ</span><ArrowUpRight size={16} /></button></div></section>}{location !== "/meadow" && <section className="archive-section"><div className="archive-rule"><span>01</span><div /><span></span></div><div className="section-block" id="new"><SectionLabel eyebrow="freshly baked" title="Thỏ Múp Sữa" count={newer.length} /><div className="card-grid">{newer.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div><div className="section-block miracle-block" id="featured"><SectionLabel eyebrow="alphabetical miracles" title="Thỏ Kỳ Tích" count={miracles.length} /><div className="card-grid">{miracles.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}{location === "/meadow" && <section className="archive-section coming-only" id="coming"><div className="archive-rule"><span>03</span><div /><span>not yet, but soon</span></div><div className="section-block"><SectionLabel eyebrow="coming soon" title="Thỏ Mặt Trăng" count={coming.length} /><div className="coming-field">{coming.map((character) => <button className="coming-card" key={character.id} onClick={() => setSelected(character)}><span className="coming-art">{character.imageUrl && <img src={character.imageUrl} alt="" />}</span><span><strong>{character.name}</strong><small>{character.caption}</small></span><ArrowUpRight size={16} /></button>)}</div></div></section>}{location === "/archive" && <section className="archive-section"><div className="archive-rule"><span>02</span><div /><span>alphabetical meadow</span></div><div className="section-block"><SectionLabel eyebrow="the complete field" title="Tất cả những chú thỏ" count={visible.length} /><div className="card-grid full-field">{visible.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}<footer className="site-footer"><div><strong>la Lapine</strong><span>nàng thỏ mộng mơ</span></div></footer></main><MusicPlayer />{selected && <DetailModal character={selected} onClose={() => setSelected(null)} favorite={favorites.includes(selected.id)} onFavorite={() => toggleFavorite(selected)} />}{random && <RandomModal character={random} onClose={() => setRandom(null)} onOpen={() => { setSelected(random); setRandom(null); }} />}</div>{showNotifications && <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />}</>;
+  return <><div className="archive-shell"><SparklesLayer /><LoveLayer loveSparks={loves} /><Header onStudio={onStudio} onNotifications={() => setShowNotifications(true)} notificationCount={unreadCount} /><main className="public-content">{location !== "/archive" && location !== "/meadow" && <section className="hero-section"><div className="hero-copy"><span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span><h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1><div className="hero-meta"><div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div><div><strong>∞</strong><span>giấc mơ</span></div></div></div><div className="hero-art-wrap"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}><img src={latest?.imageUrl || rabbitLogo} alt={latest?.name || "Nhân vật mới nhất"} /><div className="hero-art-label"><span>mới ra gần đây / field 01</span><strong>{latest?.name || "Một chú thỏ mới"}</strong><small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small></div></div></div></section>}{location === "/meadow" && <section className="field-header"><span className="eyebrow">{location === "/meadow" ? "coming to the field" : "the living rabbit field"}</span><h1>{location === "/meadow" ? <>Những chú thỏ<br /><i>đang ủ mầm.</i></> : <>Hôm nay bạn muốn<br /><i>gặp thỏ nào?</i></>}</h1><p>{location === "/meadow" ? "Một vài cái tên đang ngủ dưới lớp cỏ. Chúng sẽ tỉnh dậy khi đến mùa." : "Tìm theo tên, cảm giác hoặc bước vào đồng cỏ bằng một lựa chọn bất ngờ."}</p></section>}{location !== "/meadow" && <section className="search-section" id="archive"><div className="search-intro"><span className="eyebrow"></span><h2>⟡ thỏ nhỏ đang tìm ai?</h2></div><div className="search-tools"><label className="search-box"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên, cảm giác, câu chuyện…" /><span>{visible.length} kết quả</span></label><div className="tag-filter"><div className="tag-filter-heading"><span className="filter-label">tags</span><button className="tag-toggle" aria-label={tagsExpanded ? "Thu gọn tags" : "Mở rộng tags"} onClick={() => setTagsExpanded(!tagsExpanded)}>{tagsExpanded ? "⌃" : "⌄"}</button></div><div className={`tag-scroll ${tagsExpanded ? "expanded" : ""}`}><button className={!tag ? "active" : ""} onClick={() => setTag(null)}>tất cả</button>{allTags.slice(0, tagsExpanded ? allTags.length : 6).map((item) => <button className={tag === item ? "active" : ""} onClick={() => setTag(item)} key={item}>{item}</button>)}</div></div><button className="random-button main-random" onClick={goRandom}><span>𐔌՞. .՞𐦯 hôm nay thỏ nhỏ sẽ gặp được ai đây .ᐣ.ᐟ</span><ArrowUpRight size={16} /></button></div></section>}{location !== "/meadow" && <section className="archive-section"><div className="archive-rule"><span>01</span><div /><span></span></div><div className="section-block" id="new"><SectionLabel eyebrow="freshly baked" title="Thỏ Múp Sữa" count={newer.length} /><div className="card-grid">{newer.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div><div className="section-block miracle-block" id="featured"><SectionLabel eyebrow="alphabetical miracles" title="Thỏ Kỳ Tích" count={miracles.length} /><div className="card-grid">{miracles.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}{location === "/meadow" && <section className="archive-section coming-only" id="coming"><div className="archive-rule"><span>03</span><div /><span>not yet, but soon</span></div><div className="section-block"><SectionLabel eyebrow="coming soon" title="Thỏ Mặt Trăng" count={coming.length} /><div className="coming-field">{coming.map((character) => <button className="coming-card" key={character.id} onClick={() => setSelected(character)}><span className="coming-art">{character.imageUrl && <img src={character.imageUrl} alt="" />}</span><span><strong>{character.name}</strong><small>{character.caption}</small></span><ArrowUpRight size={16} /></button>)}</div></div></section>}{location === "/archive" && <section className="archive-section"><div className="archive-rule"><span>02</span><div /><span>alphabetical meadow</span></div><div className="section-block"><SectionLabel eyebrow="the complete field" title="Tất cả những chú thỏ" count={visible.length} /><div className="card-grid full-field">{visible.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}<footer className="site-footer"><div><strong>la Lapine</strong><span>nàng thỏ mộng mơ</span></div></footer></main><MusicPlayer />{selected && <DetailModal character={selected} onClose={() => setSelected(null)} favorite={favorites.includes(selected.id)} onFavorite={() => toggleFavorite(selected)} />}{random && <RandomModal character={random} onClose={() => setRandom(null)} onOpen={() => { setSelected(random); setRandom(null); }} />}</div>{showNotifications && <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />}</>;
 }
 
 function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
@@ -328,49 +164,10 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
-// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (ĐÃ ĐƯỢC BẺ KHÓA TRỰC TIẾP) ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
-  const [pass, setPass] = useState("");
-  const [error, setError] = useState("");
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    const cleanPass = pass.trim().toLowerCase();
-    // Chấp nhận mật khẩu chính hoặc các mật khẩu phổ biến
-    if (cleanPass === STUDIO_MASTER_PASSWORD.toLowerCase() || cleanPass === "123456" || cleanPass === "admin") {
-      toast.success("Mở studio thành công! Chào mừng chủ sở hữu.");
-      onUnlock();
-    } else {
-      setError(`Mật khẩu chưa đúng (Mật khẩu mặc định là: ${STUDIO_MASTER_PASSWORD})`);
-    }
-  };
-
-  return (
-    <div className="modal-layer">
-      <div className="modal-panel admin-gate">
-        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
-        <img src={rabbitLogo} alt="" className="gate-rabbit" />
-        <span className="eyebrow">private studio / owner only</span>
-        <h2>Vào phòng cỏ riêng</h2>
-        <p style={{ fontSize: "12px", color: "var(--text-muted, #888)", marginBottom: "12px" }}>
-          Nhập mật khẩu chủ sở hữu để truy cập Studio.
-        </p>
-        <form onSubmit={submit}>
-          <input 
-            autoFocus 
-            type="password" 
-            value={pass} 
-            onChange={(event) => setPass(event.target.value)} 
-            placeholder="Mật khẩu chủ sở hữu" 
-          />
-          {error && <div className="form-error" style={{ color: "#ff6b6b", fontSize: "13px", marginTop: "6px" }}>{error}</div>}
-          <button className="primary-button full-width" type="submit" style={{ marginTop: "12px" }}>
-            Mở studio <ArrowUpRight size={15} />
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+  const [pass, setPass] = useState(""); const [error, setError] = useState(""); const unlock = trpc.owner.unlock.useMutation();
+  const submit = async (event: FormEvent) => { event.preventDefault(); const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); };
+  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu chủ sở hữu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
 }
 
 function OwnerWorkspace({ characters, onClose, onRefresh }: { characters: Character[]; onClose: () => void; onRefresh: () => void }) {
@@ -420,42 +217,7 @@ function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Char
 }
 
 export default function Home() {
-  const { data } = trpc.characters.list.useQuery(); 
-  const [studioGate, setStudioGate] = useState(false); 
-  const [studio, setStudio] = useState(false); 
-  const characters = (data?.length ? data : fallbackCharacters) as Character[];
-
-  useEffect(() => { 
-    const handler = (event: KeyboardEvent) => { 
-      const key = event.key.toLowerCase(); 
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { 
-        event.preventDefault(); 
-        event.stopPropagation(); 
-        event.stopImmediatePropagation(); 
-        setStudio(false); 
-        setStudioGate(true); 
-      } 
-    }; 
-    window.addEventListener("keydown", handler, true); 
-    return () => window.removeEventListener("keydown", handler, true); 
-  }, []);
-
-  return (
-    <>
-      {studio ? (
-        <OwnerWorkspace characters={characters} onClose={() => setStudio(false)} onRefresh={() => window.location.reload()} />
-      ) : (
-        <PublicPage characters={characters} onStudio={() => setStudioGate(true)} />
-      )}
-      {studioGate && !studio && (
-        <AdminGate 
-          onClose={() => setStudioGate(false)} 
-          onUnlock={() => { 
-            setStudioGate(false); 
-            setStudio(true); 
-          }} 
-        />
-      )}
-    </>
-  );
+  const { data } = trpc.characters.list.useQuery(); const [studioGate, setStudioGate] = useState(false); const [studio, setStudio] = useState(false); const characters = (data?.length ? data : fallbackCharacters) as Character[];
+  useEffect(() => { const handler = (event: KeyboardEvent) => { const key = event.key.toLowerCase(); if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); setStudio(false); setStudioGate(true); } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, []);
+  return <>{studio ? <OwnerWorkspace characters={characters} onClose={() => setStudio(false)} onRefresh={() => window.location.reload()} /> : <PublicPage characters={characters} onStudio={() => setStudioGate(true)} />}{studioGate && !studio && <AdminGate onClose={() => setStudioGate(false)} onUnlock={() => { setStudioGate(false); setStudio(true); }} />}</>;
 }
