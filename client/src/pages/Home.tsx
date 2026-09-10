@@ -39,7 +39,7 @@ type Character = {
 type LoveParticle = { id: number; x: number; y: number; delay: number; rotation: number; scale: number };
 type LoveSpark = { id: number; x: number; y: number; rotation: number; particles: LoveParticle[] };
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
-const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
+const rabbitLogo = "/brand/lalapine-rabbit_45b56845.png";
 
 // Danh sách nhạc mặc định phòng khi máy chủ chưa tải nhạc
 const defaultTracks = [
