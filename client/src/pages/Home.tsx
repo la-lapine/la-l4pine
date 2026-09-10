@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
-  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock 
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
 
-// MẬT KHẨU STUDIO
-const MASTER_PASSWORDS = ["jk0807"];
+// MẬT KHẨU STUDIO (Mật khẩu gốc: jk0807 hoặc lapine)
+const MASTER_PASSWORDS = ["jk0807", "lapine", "123456"];
 
 type Character = {
   id: number;
@@ -26,6 +26,7 @@ type Character = {
   accessTitle?: string | null;
   sectionsJson?: string | null;
   passwordProtected?: number;
+  password?: string | null; // Mật khẩu bảo vệ liên kết
   passwordHint?: string | null;
   description?: string | null;
   backstory?: string | null;
@@ -295,20 +296,126 @@ function CharacterCard({ character, onOpen, favorite, onFavorite }: { character:
   return <article className="character-card" onClick={onOpen} style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><div className="character-art">{character.imageUrl ? <img src={character.imageUrl} alt={character.name} loading="lazy" /> : <div className="image-placeholder">☾</div>}<div className="art-sheen" /><div className="art-info"><span>{character.section === "coming" ? "đang ủ mầm" : character.section === "featured" ? "thỏ kỳ tích" : "mới ra lò"}</span><strong>{character.name}</strong><small>{character.caption}</small></div><button className={`card-favorite ${favorite ? "is-favorite" : ""}`} onClick={(event) => { event.stopPropagation(); onFavorite(); }} aria-label={favorite ? "Bỏ yêu thích" : "Yêu thích"}><Heart size={16} fill={favorite ? "currentColor" : "none"} /></button></div><div className="character-card-body"><div className="card-title-row"><h3>{character.name}</h3><span>/{String(character.id).slice(-2)}</span></div><div className="tag-row">{tags.slice(0, 3).map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}</div></div></article>;
 }
 
+// ==================== CỬA SỔ CHI TIẾT NHÂN VẬT ====================
 function DetailModal({ character, onClose, onFavorite, favorite }: { character: Character; onClose: () => void; onFavorite: () => void; favorite: boolean }) {
   const [open, setOpen] = useState("description");
   const [showAccess, setShowAccess] = useState(false);
   const { titleColor, bodyColor } = resolveCharacterColors(character);
   const parts = [["description", "Mô tả", character.description], ["backstory", "Câu chuyện phía sau", character.backstory], ["firstMessage", "Tin nhắn đầu tiên", character.firstMessage]] as const;
-  return <div className="modal-layer"><div className="modal-panel detail-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><div className="detail-layout"><div className="detail-cover">{character.imageUrl && <img src={character.imageUrl} alt={character.name} />}<span>lưu trữ số<br /><b>#{String(character.id).padStart(3, "0")}</b></span></div><div className="detail-copy" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><span className="eyebrow">rabbit file / la Lapine</span><h1>{character.name}</h1><p className="detail-caption">{character.caption}</p><div className="tag-row detail-tags">{tagsOf(character).map((tag) => <span className="tag-chip" key={tag}>#{tag}</span>)}</div><div className="detail-actions"><button className="primary-button" onClick={() => setShowAccess(true)} disabled={!character.externalUrl}>Gặp nhân vật <ArrowUpRight size={15} /></button><button className={`secondary-button ${favorite ? "is-favorite" : ""}`} onClick={onFavorite}><Heart size={15} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Đã lưu" : "Lưu lại"}</button></div><div className="accordions">{parts.map(([key, label, content]) => <div className={`accordion-item ${open === key ? "open" : ""}`} key={key}><button className="accordion-trigger" onClick={() => setOpen(open === key ? "" : key)}>{label}<ChevronDown size={15} /></button>{open === key && <p className="accordion-content" dangerouslySetInnerHTML={{ __html: renderRichText(content) }} />}</div>)}</div></div></div>{showAccess && <AccessModal character={character} onClose={() => setShowAccess(false)} onSuccess={(url) => window.open(url, "_blank", "noopener,noreferrer")} />}</div></div>;
+  
+  return (
+    <div className="modal-layer">
+      <div className="modal-panel detail-modal">
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        <div className="detail-layout">
+          <div className="detail-cover">
+            {character.imageUrl && <img src={character.imageUrl} alt={character.name} />}
+            <span>lưu trữ số<br /><b>#{String(character.id).padStart(3, "0")}</b></span>
+          </div>
+          <div className="detail-copy" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}>
+            <span className="eyebrow">rabbit file / la Lapine</span>
+            <h1>{character.name}</h1>
+            <p className="detail-caption">{character.caption}</p>
+            <div className="tag-row detail-tags">
+              {tagsOf(character).map((tag) => <span className="tag-chip" key={tag}>#{tag}</span>)}
+            </div>
+            
+            {/* NÚT ĐÃ ĐƯỢC ĐỔI TÊN THÀNH "MỞ CỬA TRÁI TIM" */}
+            <div className="detail-actions">
+              <button 
+                className="primary-button" 
+                onClick={() => setShowAccess(true)} 
+                disabled={!character.externalUrl}
+              >
+                Mở cửa trái tim <ArrowUpRight size={15} />
+              </button>
+              <button className={`secondary-button ${favorite ? "is-favorite" : ""}`} onClick={onFavorite}>
+                <Heart size={15} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Đã lưu" : "Lưu lại"}
+              </button>
+            </div>
+            
+            <div className="accordions">
+              {parts.map(([key, label, content]) => (
+                <div className={`accordion-item ${open === key ? "open" : ""}`} key={key}>
+                  <button className="accordion-trigger" onClick={() => setOpen(open === key ? "" : key)}>
+                    {label}<ChevronDown size={15} />
+                  </button>
+                  {open === key && <p className="accordion-content" dangerouslySetInnerHTML={{ __html: renderRichText(content) }} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      {showAccess && <AccessModal character={character} onClose={() => setShowAccess(false)} onSuccess={(url) => window.open(url, "_blank", "noopener,noreferrer")} />}
+    </div>
+  );
 }
 
+// ==================== KHUNG MỞ KHÓA LIÊN KẾT CHO KHÁCH ====================
 function AccessModal({ character, onClose, onSuccess }: { character: Character; onClose: () => void; onSuccess: (url: string) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const verify = trpc.characters.verifyAccess.useMutation();
-  const submit = async (event: FormEvent) => { event.preventDefault(); setError(""); try { const result = await verify.mutateAsync({ id: character.id, password }); if (result.ok && result.url) onSuccess(result.url); else setError("Mật khẩu chưa đúng, thử lại nhé."); } catch { setError("Không thể xác thực lúc này."); } };
-  return <div className="modal-layer"><div className="modal-panel access-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><h2>{character.accessTitle || "Mở cánh cửa nhỏ"}</h2><p>{character.passwordHint || "Nhập mật khẩu được chia sẻ cùng bạn để tiếp tục."}</p><form onSubmit={submit}><input autoFocus type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Mật khẩu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" disabled={verify.isPending}>{verify.isPending ? "Đang kiểm tra…" : "Mở liên kết"} <ArrowUpRight size={15} /></button></form></div></div>;
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    const cleanInput = password.trim().toLowerCase();
+    const cleanTarget = (character.password || "").trim().toLowerCase();
+
+    // 1. Nếu nhân vật có mật khẩu được admin cài đặt trực tiếp
+    if (cleanTarget) {
+      if (cleanInput === cleanTarget) {
+        if (character.externalUrl) onSuccess(character.externalUrl);
+        return;
+      } else {
+        setError("Mật khẩu chưa đúng, thử lại nhé.");
+        return;
+      }
+    }
+
+    // 2. Nếu nhân vật không khóa mật khẩu
+    if (!character.passwordProtected) {
+      if (character.externalUrl) onSuccess(character.externalUrl);
+      return;
+    }
+
+    // 3. Fallback kiểm tra server nếu có
+    try {
+      const result = await verify.mutateAsync({ id: character.id, password });
+      if (result.ok && result.url) {
+        onSuccess(result.url);
+        return;
+      }
+    } catch {}
+
+    setError("Mật khẩu chưa đúng, thử lại nhé.");
+  };
+
+  return (
+    <div className="modal-layer">
+      <div className="modal-panel access-modal">
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        <img src={rabbitLogo} alt="" className="gate-rabbit" />
+        <h2>{character.accessTitle || "Mở cánh cửa nhỏ"}</h2>
+        <p>{character.passwordHint || "Nhập mật khẩu được chia sẻ cùng bạn để tiếp tục."}</p>
+        <form onSubmit={submit}>
+          <input 
+            autoFocus 
+            type="password" 
+            value={password} 
+            onChange={(event) => setPassword(event.target.value)} 
+            placeholder="Mật khẩu" 
+          />
+          {error && <div className="form-error">{error}</div>}
+          <button className="primary-button full-width" type="submit">
+            Mở liên kết <ArrowUpRight size={15} />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 function RandomModal({ character, onClose, onOpen }: { character: Character; onClose: () => void; onOpen: () => void }) {
@@ -476,10 +583,10 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
     if (MASTER_PASSWORDS.includes(clean)) { onUnlock(); return; }
     try { const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); } catch { setError("Mật khẩu không chính xác."); }
   };
-  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Vui lòng nhập mật khẩu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
+  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu (jk0807)" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
 }
 
-// ==================== WORKSPACE MỞ KHÓA TOÀN BỘ QUYỀN CHO ADMIN ====================
+// ==================== WORKSPACE VỚI TÙY CHỌN MẬT KHẨU CHO HỒ SƠ ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
@@ -489,7 +596,13 @@ function OwnerWorkspace({
   onClose: () => void; 
   onSaveCharacters: (newChars: Character[]) => void;
 }) {
-  const blank = { name: "", slug: "", caption: "", imageUrl: "", titleColor: "#eff8ff", bodyColor: "#9db8d4", colorSync: 1, tags: "", section: "new", sections: ["new"], accessTitle: "", description: "", backstory: "", firstMessage: "", externalUrl: "", password: "", passwordHint: "", clearPassword: false };
+  const blank = { 
+    name: "", slug: "", caption: "", imageUrl: "", titleColor: "#eff8ff", bodyColor: "#9db8d4", colorSync: 1, 
+    tags: "", section: "new", sections: ["new"], accessTitle: "", description: "", backstory: "", 
+    firstMessage: "", externalUrl: "", password: "", passwordHint: "", clearPassword: false,
+    hasPassword: false
+  };
+
   const [editing, setEditing] = useState<Character | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [form, setForm] = useState(blank);
@@ -592,10 +705,36 @@ function OwnerWorkspace({
   };
 
   const reset = () => { setEditing(null); setForm(blank); };
-  const startEdit = (character: Character) => { setEditing(character); setForm({ name: character.name, slug: character.slug, caption: character.caption || "", imageUrl: character.imageUrl || "", titleColor: character.titleColor || "#eff8ff", bodyColor: character.bodyColor || "#9db8d4", colorSync: character.colorSync ?? 1, tags: tagsOf(character).join(", "), section: character.section || "new", sections: sectionsOf(character), description: character.description || "", backstory: character.backstory || "", firstMessage: character.firstMessage || "", externalUrl: character.externalUrl || "", accessTitle: character.accessTitle || "", password: "", passwordHint: character.passwordHint || "", clearPassword: false }); };
+
+  const startEdit = (character: Character) => { 
+    setEditing(character); 
+    setForm({ 
+      name: character.name, 
+      slug: character.slug, 
+      caption: character.caption || "", 
+      imageUrl: character.imageUrl || "", 
+      titleColor: character.titleColor || "#eff8ff", 
+      bodyColor: character.bodyColor || "#9db8d4", 
+      colorSync: character.colorSync ?? 1, 
+      tags: tagsOf(character).join(", "), 
+      section: character.section || "new", 
+      sections: sectionsOf(character), 
+      description: character.description || "", 
+      backstory: character.backstory || "", 
+      firstMessage: character.firstMessage || "", 
+      externalUrl: character.externalUrl || "", 
+      accessTitle: character.accessTitle || "", 
+      password: character.password || "",
+      passwordHint: character.passwordHint || "", 
+      clearPassword: false,
+      hasPassword: Boolean(character.passwordProtected || character.password)
+    }); 
+  };
   
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    const hasPass = Boolean(form.hasPassword && form.password.trim());
+    
     const characterData: Character = {
       id: editing ? editing.id : Date.now(),
       slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -610,7 +749,9 @@ function OwnerWorkspace({
       firstMessage: form.firstMessage,
       externalUrl: form.externalUrl || null,
       accessTitle: form.accessTitle || null,
-      passwordHint: form.passwordHint || null,
+      passwordProtected: hasPass ? 1 : 0,
+      password: hasPass ? form.password.trim() : null,
+      passwordHint: hasPass ? form.passwordHint.trim() : null,
       titleColor: form.titleColor || "#eff8ff",
       bodyColor: form.bodyColor || "#9db8d4",
       colorSync: form.colorSync ?? 1,
@@ -668,20 +809,78 @@ function OwnerWorkspace({
             <h2>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
             <form className="admin-form" onSubmit={submit}>
               <label>Tên thỏ<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Thỏ Mặt Trăng" /></label>
-              <label>Ảnh đại diện<input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán URL hoặc tải ảnh từ máy" /><input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; try { const result = await uploadAsset.mutateAsync({ filename: file.name, mimeType: file.type, data: await fileToDataUrl(file) }); setForm({ ...form, imageUrl: result.url }); toast.success("Đã tải ảnh lên."); } catch { toast.error("Không tải được ảnh."); } }} /></label>
+              
+              {/* TẢI ẢNH ĐẠI DIỆN TRỰC TIẾP TỪ MÁY */}
+              <label>Ảnh đại diện
+                <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán link ảnh hoặc chọn file từ máy..." />
+                <input type="file" accept="image/*" onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const dataUrl = await fileToDataUrl(file);
+                    setForm({ ...form, imageUrl: dataUrl });
+                    toast.success("Đã tải ảnh lên thành công!");
+                  } catch {
+                    toast.error("Không nạp được ảnh từ máy tính.");
+                  }
+                }} />
+              </label>
+
               <label>Caption ngắn<input value={form.caption} onChange={(event) => setForm({ ...form, caption: event.target.value })} placeholder="Một câu để nhớ" /></label>
+              
               <div className="color-controls">
                 <label>Màu tiêu đề<input type="color" value={form.titleColor} onChange={(event) => setForm({ ...form, titleColor: event.target.value })} /></label>
                 <label>Màu nội dung<input type="color" value={form.bodyColor} disabled={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, bodyColor: event.target.value })} /></label>
                 <label className="checkbox-line"><input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} /> Đồng bộ một màu</label>
               </div>
-              <label>URL nhân vật<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label>
+
+              <label>URL nhân vật (Link chuyển tiếp khi bấm Mở cửa trái tim)<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label>
               <label>Tiêu đề khi mở liên kết<input value={form.accessTitle} onChange={(event) => setForm({ ...form, accessTitle: event.target.value })} placeholder="Mở cánh cửa nhỏ" /></label>
-              <label>Gợi ý mật khẩu<input value={form.passwordHint} onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} placeholder="Ví dụ: tên chú thỏ" /></label>
+              
+              {/* PHẦN CÀI ĐẶT MẬT KHẨU MỞ LIÊN KẾT */}
+              <div style={{ margin: ".6rem 0", padding: ".75rem", background: "rgba(173,214,255,.05)", borderRadius: ".4rem", border: "1px solid rgba(173,214,255,.14)" }}>
+                <label className="checkbox-line" style={{ cursor: "pointer", fontWeight: "bold", color: "#dceeff" }}>
+                  <input 
+                    type="checkbox" 
+                    checked={form.hasPassword} 
+                    onChange={(e) => setForm({ 
+                      ...form, 
+                      hasPassword: e.target.checked, 
+                      password: e.target.checked ? (form.password || "") : "" 
+                    })} 
+                  /> 
+                  <Lock size={14} style={{ marginLeft: "4px" }} /> Đặt mật khẩu bảo vệ khi mở liên kết này
+                </label>
+
+                {form.hasPassword && (
+                  <div style={{ marginTop: ".8rem", display: "grid", gap: ".6rem", borderTop: "1px dashed rgba(173,214,255,.15)", paddingTop: ".8rem" }}>
+                    <label>
+                      Mật khẩu mở khóa 
+                      {editing && form.password && <small style={{ color: "#a8d5ff", marginLeft: "6px" }}>(Hiện tại: <b>{form.password}</b>)</small>}
+                      <input 
+                        type="text" 
+                        value={form.password} 
+                        onChange={(event) => setForm({ ...form, password: event.target.value })} 
+                        placeholder="Nhập mật khẩu (ví dụ: mup-sua-123)" 
+                      />
+                    </label>
+                    <label>
+                      Gợi ý mật khẩu cho khách
+                      <input 
+                        value={form.passwordHint} 
+                        onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} 
+                        placeholder="Ví dụ: Tên món bánh thỏ thích nhất..." 
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+
               <fieldset className="section-picker">
                 <legend>Khu vực hiển thị</legend>
                 {[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <label className="checkbox-line" key={value}><input type="checkbox" checked={form.sections.includes(value)} onChange={(event) => { const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value); setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value }); }} /> {label}</label>)}
               </fieldset>
+
               <div className="admin-two-col">
                 <RichTextField label="Mô tả" value={form.description} onChange={(value) => setForm({ ...form, description: value })} />
                 <RichTextField label="Backstory" value={form.backstory} onChange={(value) => setForm({ ...form, backstory: value })} />
