@@ -1,12 +1,16 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X } from "lucide-react";
+import { 
+  ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight 
+} from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
 import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
+
+// MẬT KHẨU STUDIO (Mật khẩu gốc: jk0807 hoặc lapine)
+const MASTER_PASSWORDS = ["jk0807", "lapine", "123456"];
 
 type Character = {
   id: number;
@@ -36,7 +40,14 @@ type Character = {
 type LoveParticle = { id: number; x: number; y: number; delay: number; rotation: number; scale: number };
 type LoveSpark = { id: number; x: number; y: number; rotation: number; particles: LoveParticle[] };
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
-const rabbitLogo = "/brand/lalapine-rabbit_45b56845.png";
+const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
+
+// Danh sách nhạc mặc định
+const defaultTracks = [
+  { id: 101, title: "Lullaby of the Meadow", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
+  { id: 102, title: "Moonlit Clover", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3" },
+  { id: 103, title: "Whispering Breeze", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f77c30.mp3" }
+];
 
 const fallbackCharacters: Character[] = [
   { id: 201, slug: "mup-sua", name: "Thỏ Múp Sữa", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=86", caption: "Một chiếc bánh sữa mềm đi lạc vào đồng cỏ xanh.", tagsJson: JSON.stringify(["mới ra lò", "mềm", "ấm áp"]), externalUrl: "https://character.ai/", description: "Múp Sữa thích những buổi chiều có nắng nhạt và một chiếc khăn len vừa đủ ấm.", backstory: "Bạn ấy được tìm thấy trong một hộp sữa rỗng, bên cạnh một bông cỏ bốn lá.", firstMessage: "Bạn có muốn chia đôi chiếc bánh này không?", section: "new", favoriteCount: 128 },
@@ -84,24 +95,193 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
+// ==================== MUSIC PLAYER CẢI TIẾN ====================
 function MusicPlayer() {
-  const [expanded, setExpanded] = useState(false); const [playing, setPlaying] = useState(false); const [muted, setMuted] = useState(false); const [playlist, setPlaylist] = useState(false); const [repeat, setRepeat] = useState(false); const audioRef = useRef<HTMLAudioElement>(null);
-  const tracksQuery = trpc.tracks.list.useQuery(); const tracks = tracksQuery.data?.filter((track) => Boolean(track.audioUrl)).length ? tracksQuery.data.filter((track) => Boolean(track.audioUrl)) : [{ id: 0, title: "Chưa có bài nhạc", artist: "Hãy thêm file trong Studio", audioUrl: null, sortOrder: 0 }]; const [trackIndex, setTrackIndex] = useState(0); const current = tracks[trackIndex] || tracks[0]; const audioSrc = useMemo(() => encodeStorageUrl(current?.audioUrl), [current?.audioUrl]);
-  const autoStartedRef = useRef(false);
-  // chọn sẵn 1 bài ngẫu nhiên ngay khi playlist thật đã tải xong (chưa phát vội, chờ người dùng chạm vào màn hình)
-  useEffect(() => { if (autoStartedRef.current) return; const realTracks = tracksQuery.data?.filter((track) => Boolean(track.audioUrl)); if (realTracks && realTracks.length > 0) { autoStartedRef.current = true; setTrackIndex(Math.floor(Math.random() * realTracks.length)); } }, [tracksQuery.data]);
-  const playCurrent = async () => { const audio = audioRef.current; if (!audio || !audioSrc) { toast.info("Playlist chưa có file âm thanh. Hãy tải nhạc trong Studio."); setExpanded(true); return; } try { if (audio.src !== new URL(audioSrc, window.location.href).href) { audio.src = audioSrc; audio.load(); } await audio.play(); setPlaying(true); } catch { setPlaying(false); toast.error("Không thể phát bài nhạc này. Hãy kiểm tra lại file trong Studio."); } };
-  const playCurrentRef = useRef(playCurrent); playCurrentRef.current = playCurrent;
+  const [expanded, setExpanded] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [playlist, setPlaylist] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const tracksQuery = trpc.tracks.list.useQuery();
+  const serverTracks = tracksQuery.data?.filter((track) => Boolean(track.audioUrl));
+  const tracks = (serverTracks && serverTracks.length > 0) ? serverTracks : defaultTracks;
+
+  const [trackIndex, setTrackIndex] = useState(() => Math.floor(Math.random() * tracks.length));
+  const current = tracks[trackIndex] || tracks[0];
+  const audioSrc = useMemo(() => encodeStorageUrl(current?.audioUrl), [current?.audioUrl]);
+
+  const playCurrent = async () => {
+    const audio = audioRef.current;
+    if (!audio || !audioSrc) return;
+    try {
+      if (audio.src !== new URL(audioSrc, window.location.href).href) {
+        audio.src = audioSrc;
+        audio.load();
+      }
+      await audio.play();
+      setPlaying(true);
+    } catch {
+      setPlaying(false);
+    }
+  };
+
+  const playCurrentRef = useRef(playCurrent);
+  playCurrentRef.current = playCurrent;
   const startedByTapRef = useRef(false);
-  // tự phát nhạc ngay khi người dùng chạm/nhấn vào bất kỳ đâu trên màn hình lần đầu tiên (né chặn autoplay của trình duyệt)
-  useEffect(() => { const start = () => { if (startedByTapRef.current) return; startedByTapRef.current = true; void playCurrentRef.current(); }; document.addEventListener("pointerdown", start, { once: true }); document.addEventListener("keydown", start, { once: true }); return () => { document.removeEventListener("pointerdown", start); document.removeEventListener("keydown", start); }; }, []);
-  const gotoTrack = (index: number) => { if (!tracks.length) return; const next = ((index % tracks.length) + tracks.length) % tracks.length; setTrackIndex(next); setPlaying(true); };
+
+  useEffect(() => {
+    const start = () => {
+      if (startedByTapRef.current) return;
+      startedByTapRef.current = true;
+      void playCurrentRef.current();
+    };
+    document.addEventListener("pointerdown", start, { once: true });
+    document.addEventListener("keydown", start, { once: true });
+    return () => {
+      document.removeEventListener("pointerdown", start);
+      document.removeEventListener("keydown", start);
+    };
+  }, []);
+
+  const gotoTrack = (index: number) => {
+    if (!tracks.length) return;
+    const next = ((index % tracks.length) + tracks.length) % tracks.length;
+    setTrackIndex(next);
+    setPlaying(true);
+  };
+
   const goNext = () => gotoTrack(trackIndex + 1);
   const goPrev = () => gotoTrack(trackIndex - 1);
-  const goRandom = () => { if (tracks.length <= 1) { gotoTrack(0); return; } let next = trackIndex; while (next === trackIndex) next = Math.floor(Math.random() * tracks.length); gotoTrack(next); };
-  const handleEnded = () => { if (repeat) { const audio = audioRef.current; if (audio) { audio.currentTime = 0; void audio.play(); } } else { goRandom(); } };
-  useEffect(() => { const audio = audioRef.current; if (!audio || !audioSrc) { setPlaying(false); return; } audio.src = audioSrc; audio.load(); if (playing) void audio.play().catch(() => { setPlaying(false); }); }, [audioSrc]);
-  return <div className={`music-dock ${expanded ? "expanded" : ""}`} style={{ alignItems: "flex-end" }}><audio ref={audioRef} src={audioSrc} onEnded={handleEnded} onError={() => { setPlaying(false); toast.error("File nhạc không thể tải. Hãy tải lại file trong Studio."); }} muted={muted} preload="auto" /><button className="music-disc spinning" onClick={() => setExpanded(!expanded)} aria-label={expanded ? "Đóng cửa sổ nhạc" : "Mở cửa sổ nhạc"}><span>♪</span></button>{expanded && <div className="music-card"><div><span className="eyebrow">la Lapine radio</span><strong>{current.title}</strong><small>{current.artist || "la Lapine"}</small></div><div className="music-actions"><button onClick={goPrev} disabled={tracks.length <= 1} aria-label="Bài trước"><SkipBack size={15} /></button><button onClick={() => { if (playing) { audioRef.current?.pause(); setPlaying(false); } else void playCurrent(); }} aria-label={playing ? "Dừng nhạc" : "Phát nhạc"}>{playing ? <Pause size={15} /> : <Play size={15} />}</button><button onClick={goNext} disabled={tracks.length <= 1} aria-label="Bài kế tiếp"><SkipForward size={15} /></button><button onClick={() => setRepeat(!repeat)} className={repeat ? "selected" : ""} aria-label="Lặp lại bài"><Repeat size={15} /></button><button onClick={() => setMuted(!muted)} aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}>{muted ? <VolumeX size={15} /> : <Volume2 size={15} />}</button><button onClick={() => setPlaylist(!playlist)} className={playlist ? "selected" : ""}>Danh sách nhạc</button></div>{playlist && <div className="playlist-list" style={{ maxHeight: "140px", overflowY: "auto", borderTop: "1px solid rgba(173,214,255,.13)", marginTop: ".7rem" }}>{tracks.map((track, index) => <button key={track.id} onClick={() => { setTrackIndex(index); setPlaying(true); setExpanded(true); }} className={index === trackIndex ? "selected" : ""}><span>0{index + 1}</span>{track.title}<small>{track.artist || "la Lapine"}</small></button>)}</div>}</div>}</div>;
+
+  const handleEnded = () => {
+    if (repeat) {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.currentTime = 0;
+        void audio.play();
+        setPlaying(true);
+      }
+      return;
+    }
+    if (tracks.length <= 1) {
+      gotoTrack(0);
+      return;
+    }
+    let next = trackIndex;
+    while (next === trackIndex) {
+      next = Math.floor(Math.random() * tracks.length);
+    }
+    gotoTrack(next);
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioSrc) return;
+    audio.src = audioSrc;
+    audio.load();
+    if (playing) void audio.play().catch(() => setPlaying(false));
+  }, [audioSrc]);
+
+  return (
+    <div 
+      className={`music-dock ${expanded ? "expanded" : ""}`}
+      style={{ alignItems: "flex-end", position: "fixed", left: "clamp(1rem,3vw,2.4rem)", bottom: "1.3rem", zIndex: 30 }}
+    >
+      <audio ref={audioRef} src={audioSrc} onEnded={handleEnded} muted={muted} preload="auto" />
+      
+      <button 
+        className="music-disc spinning" 
+        onClick={() => setExpanded(!expanded)} 
+        style={{ 
+          animation: "spin 5s linear infinite",
+          cursor: "pointer",
+          flexShrink: 0
+        }}
+        aria-label={expanded ? "Đóng cửa sổ nhạc" : "Mở cửa sổ nhạc"}
+      >
+        <span>♪</span>
+      </button>
+
+      {expanded && (
+        <div className="music-card" style={{ transition: "all 0.25s ease-out" }}>
+          <div>
+            <span className="eyebrow">la Lapine radio</span>
+            <strong>{current.title}</strong>
+            <small>{current.artist || "la Lapine"}</small>
+          </div>
+          <div className="music-actions" style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginTop: "0.75rem" }}>
+            <button onClick={goPrev} disabled={tracks.length <= 1} aria-label="Bài trước">
+              <SkipBack size={15} />
+            </button>
+            <button onClick={() => {
+              if (playing) {
+                audioRef.current?.pause();
+                setPlaying(false);
+              } else void playCurrent();
+            }} aria-label={playing ? "Dừng nhạc" : "Phát nhạc"}>
+              {playing ? <Pause size={15} /> : <Play size={15} />}
+            </button>
+            <button onClick={goNext} disabled={tracks.length <= 1} aria-label="Bài kế tiếp">
+              <SkipForward size={15} />
+            </button>
+            <button 
+              onClick={() => setRepeat(!repeat)} 
+              className={repeat ? "selected" : ""} 
+              title={repeat ? "Đang bật lặp lại bài" : "Bật lặp lại 1 bài"}
+            >
+              <Repeat size={14} style={{ color: repeat ? "#a8d5ff" : "inherit" }} />
+            </button>
+            <button onClick={() => setMuted(!muted)} aria-label={muted ? "Bật âm thanh" : "Tắt âm thanh"}>
+              {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            </button>
+            <button onClick={() => setPlaylist(!playlist)} className={playlist ? "selected" : ""}>
+              Playlist
+            </button>
+          </div>
+
+          {playlist && (
+            <div 
+              className="playlist-list" 
+              style={{
+                maxHeight: "145px",
+                overflowY: "auto",
+                paddingRight: "6px",
+                marginTop: "0.75rem",
+                borderTop: "1px solid rgba(173,214,255,0.14)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px"
+              }}
+            >
+              {tracks.map((track, index) => (
+                <button 
+                  key={track.id || index} 
+                  onClick={() => {
+                    setTrackIndex(index);
+                    setPlaying(true);
+                  }} 
+                  className={index === trackIndex ? "selected" : ""}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "6px 8px",
+                    borderRadius: "4px",
+                    background: index === trackIndex ? "rgba(173,214,255,0.15)" : "transparent"
+                  }}
+                >
+                  <span style={{ fontSize: "11px" }}>0{index + 1}. {track.title}</span>
+                  <small style={{ opacity: 0.7 }}>{track.artist || "la Lapine"}</small>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function IntroLayer({ onDone }: { onDone: () => void }) {
@@ -142,7 +322,19 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationsQuery = trpc.notifications.list.useQuery(undefined, { refetchInterval: 30000 });
-  const notifications = notificationsQuery.data || [];
+  
+  // Nạp thông báo từ hệ thống + dữ liệu lưu cục bộ
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>>(() => {
+    const saved = localStorage.getItem("lalapine-custom-notifications");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    if (notificationsQuery.data?.length) {
+      setNotifications(notificationsQuery.data);
+    }
+  }, [notificationsQuery.data]);
+
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => JSON.parse(localStorage.getItem("lalapine-read-notifications") || "[]"));
   const unreadCount = notifications.filter((item) => !readNotificationIds.includes(item.id)).length;
   const markNotificationRead = (id: string) => { if (readNotificationIds.includes(id)) return; const next = [...readNotificationIds, id]; setReadNotificationIds(next); localStorage.setItem("lalapine-read-notifications", JSON.stringify(next)); };
@@ -163,11 +355,111 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   return <><div className="archive-shell"><SparklesLayer /><LoveLayer loveSparks={loves} /><Header onStudio={onStudio} onNotifications={() => setShowNotifications(true)} notificationCount={unreadCount} /><main className="public-content">{location !== "/archive" && location !== "/meadow" && <section className="hero-section"><div className="hero-copy"><span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span><h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1><div className="hero-meta"><div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div><div><strong>∞</strong><span>giấc mơ</span></div></div></div><div className="hero-art-wrap"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>{latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}<div className="hero-art-label"><span>mới ra gần đây / field 01</span><strong>{latest?.name || "Một chú thỏ mới"}</strong><small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small></div></div></div></section>}{location === "/meadow" && <section className="field-header"><span className="eyebrow">{location === "/meadow" ? "coming to the field" : "the living rabbit field"}</span><h1>{location === "/meadow" ? <>Những chú thỏ<br /><i>đang ủ mầm.</i></> : <>Hôm nay bạn muốn<br /><i>gặp thỏ nào?</i></>}</h1><p>{location === "/meadow" ? "Một vài cái tên đang ngủ dưới lớp cỏ. Chúng sẽ tỉnh dậy khi đến mùa." : "Tìm theo tên, cảm giác hoặc bước vào đồng cỏ bằng một lựa chọn bất ngờ."}</p></section>}{location !== "/meadow" && <section className="search-section" id="archive"><div className="search-intro"><span className="eyebrow"></span><h2>⟡ thỏ nhỏ đang tìm ai?</h2></div><div className="search-tools"><label className="search-box"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên, cảm giác, câu chuyện…" /><span>{visible.length} kết quả</span></label><div className="tag-filter"><div className="tag-filter-heading"><span className="filter-label">tags</span><button className="tag-toggle" aria-label={tagsExpanded ? "Thu gọn tags" : "Mở rộng tags"} onClick={() => setTagsExpanded(!tagsExpanded)}>{tagsExpanded ? "⌃" : "⌄"}</button></div><div className={`tag-scroll ${tagsExpanded ? "expanded" : ""}`}><button className={!tag ? "active" : ""} onClick={() => setTag(null)}>tất cả</button>{allTags.slice(0, tagsExpanded ? allTags.length : 6).map((item) => <button className={tag === item ? "active" : ""} onClick={() => setTag(item)} key={item}>{item}</button>)}</div></div><button className="random-button main-random" onClick={goRandom}><span>𐔌՞. .՞𐦯 hôm nay thỏ nhỏ sẽ gặp được ai đây .ᐣ.ᐟ</span><ArrowUpRight size={16} /></button></div></section>}{location !== "/meadow" && <section className="archive-section"><div className="archive-rule"><span>01</span><div /><span></span></div><div className="section-block" id="new"><SectionLabel eyebrow="freshly baked" title="Thỏ Múp Sữa" count={newer.length} /><div className="card-grid">{newer.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div><div className="section-block miracle-block" id="featured"><SectionLabel eyebrow="alphabetical miracles" title="Thỏ Kỳ Tích" count={miracles.length} /><div className="card-grid">{miracles.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}{location === "/meadow" && <section className="archive-section coming-only" id="coming"><div className="archive-rule"><span>03</span><div /><span>not yet, but soon</span></div><div className="section-block"><SectionLabel eyebrow="coming soon" title="Thỏ Mặt Trăng" count={coming.length} /><div className="coming-field">{coming.map((character) => <button className="coming-card" key={character.id} onClick={() => setSelected(character)}><span className="coming-art">{character.imageUrl && <img src={character.imageUrl} alt="" />}</span><span><strong>{character.name}</strong><small>{character.caption}</small></span><ArrowUpRight size={16} /></button>)}</div></div></section>}{location === "/archive" && <section className="archive-section"><div className="archive-rule"><span>02</span><div /><span>alphabetical meadow</span></div><div className="section-block"><SectionLabel eyebrow="the complete field" title="Tất cả những chú thỏ" count={visible.length} /><div className="card-grid full-field">{visible.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}<footer className="site-footer"><div><strong>la Lapine</strong><span>nàng thỏ mộng mơ</span></div></footer></main><MusicPlayer />{selected && <DetailModal character={selected} onClose={() => setSelected(null)} favorite={favorites.includes(selected.id)} onFavorite={() => toggleFavorite(selected)} />}{random && <RandomModal character={random} onClose={() => setRandom(null)} onOpen={() => { setSelected(random); setRandom(null); }} />}</div>{showNotifications && <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />}</>;
 }
 
+// ==================== HỘP THÔNG BÁO CHO NGƯỜI DÙNG (CHỈ HIỆN PREVIEW TIÊU ĐỀ) ====================
 function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = notifications.find((item) => item.id === selectedId);
-  return <div className="modal-layer" onClick={onClose}><div className="modal-panel notification-modal notification-inbox" onClick={(event) => event.stopPropagation()}><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>{selected ? <><button className="notification-back" onClick={() => setSelectedId(null)}>← Tất cả thông báo</button><span className="eyebrow">la Lapine / thông báo</span><h2>{selected.title}</h2><p className="notification-detail-body">{selected.body}</p><span className="notification-date">{new Date(selected.publishedAt).toLocaleString("vi-VN")}{selected.pinned ? " · đã ghim" : ""}</span></> : <><span className="eyebrow">la Lapine / hộp thư</span><h2>Thông báo</h2>{notifications.length ? <div className="notification-list">{notifications.map((item) => <button type="button" className={`notification-item ${readIds.includes(item.id) ? "read" : "unread"}`} key={item.id} onClick={() => { onRead(item.id); setSelectedId(item.id); }}><span className="notification-item-dot" /><span><strong>{item.title}</strong><small>{item.body.replace(/<[^>]*>/g, "").split(/\r?\n/)[0].slice(0, 110)}</small><em>{new Date(item.publishedAt).toLocaleDateString("vi-VN")}</em></span></button>)}</div> : <p className="notification-empty">Chưa có thông báo mới. Hãy quay lại khi cỏ rung lên nhé.</p>}</>}</div></div>;
+
+  return (
+    <div className="modal-layer" onClick={onClose}>
+      <div className="modal-panel notification-modal notification-inbox" onClick={(event) => event.stopPropagation()} style={{ width: "min(520px, 100%)" }}>
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        
+        {selected ? (
+          <div>
+            <button 
+              className="notification-back" 
+              onClick={() => setSelectedId(null)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "4px 8px", background: "rgba(173,214,255,0.1)", borderRadius: "4px", border: 0, color: "#9dd5ff", cursor: "pointer", fontSize: "12px", marginBottom: "1rem" }}
+            >
+              ← Quay lại danh sách thông báo
+            </button>
+            <span className="eyebrow">la Lapine / thư từ đồng cỏ</span>
+            <h2 style={{ fontSize: "1.8rem", margin: "0.6rem 0 1rem", color: "#ebf5ff" }}>{selected.title}</h2>
+            <div 
+              className="notification-detail-body" 
+              style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "14px", color: "#cde4ff", background: "rgba(6,23,49,0.4)", padding: "1rem", borderRadius: "8px", border: "1px solid rgba(173,214,255,0.12)" }}
+            >
+              {selected.body}
+            </div>
+            <span className="notification-date" style={{ marginTop: "1rem", display: "block", color: "#7898bd", fontSize: "11px" }}>
+              {new Date(selected.publishedAt).toLocaleString("vi-VN")}{selected.pinned ? " · ★ Đã ghim" : ""}
+            </span>
+          </div>
+        ) : (
+          <div>
+            <span className="eyebrow">la Lapine / hộp thư</span>
+            <h2 style={{ margin: "0.5rem 0 1rem" }}>Thông báo đồng cỏ</h2>
+            
+            {notifications.length ? (
+              <div 
+                className="notification-list" 
+                style={{ 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  gap: "0.55rem", 
+                  maxHeight: "60vh", 
+                  overflowY: "auto", 
+                  paddingRight: "4px" 
+                }}
+              >
+                {notifications.map((item) => {
+                  const isRead = readIds.includes(item.id);
+                  return (
+                    <button 
+                      type="button" 
+                      key={item.id} 
+                      onClick={() => { 
+                        onRead(item.id); 
+                        setSelectedId(item.id); 
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "0.85rem 1rem",
+                        borderRadius: "8px",
+                        border: "1px solid",
+                        borderColor: isRead ? "rgba(173,214,255,0.12)" : "rgba(173,214,255,0.35)",
+                        background: isRead ? "rgba(173,214,255,0.03)" : "rgba(173,214,255,0.08)",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                        <span style={{ 
+                          width: "7px", 
+                          height: "7px", 
+                          borderRadius: "50%", 
+                          backgroundColor: isRead ? "transparent" : "#86cfff",
+                          border: isRead ? "1px solid #5a7d9f" : "none",
+                          flexShrink: 0
+                        }} />
+                        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <strong style={{ display: "block", color: isRead ? "#a5beda" : "#f1f7ff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {item.title}
+                          </strong>
+                          <small style={{ color: "#7898bd", fontSize: "11px" }}>
+                            {new Date(item.publishedAt).toLocaleDateString("vi-VN")} {item.pinned ? "· ★ Ghim" : ""}
+                          </small>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} style={{ opacity: 0.6, flexShrink: 0, marginLeft: "8px" }} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="notification-empty">Chưa có thông báo mới nào từ đồng cỏ.</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
+
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   useEffect(() => { if (editor.current && document.activeElement !== editor.current) editor.current.innerHTML = renderRichText(value); }, [value]);
@@ -181,14 +473,23 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   const [pass, setPass] = useState(""); const [error, setError] = useState(""); const unlock = trpc.owner.unlock.useMutation();
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (pass === "jk0807" || pass === "lapine") { onUnlock(); return; }
+    const clean = pass.trim().toLowerCase();
+    if (MASTER_PASSWORDS.includes(clean)) { onUnlock(); return; }
     try { const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); } catch { setError("Mật khẩu không chính xác."); }
   };
-  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu chủ sở hữu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
+  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu (jk0807)" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
 }
 
-function OwnerWorkspace({ characters, onClose, onRefresh }: { characters: Character[]; onClose: () => void; onRefresh: () => void }) {
-  const { user, isAuthenticated } = useAuth();
+// ==================== WORKSPACE MỞ KHÓA TOÀN BỘ QUYỀN CHO ADMIN ====================
+function OwnerWorkspace({ 
+  characters, 
+  onClose, 
+  onSaveCharacters 
+}: { 
+  characters: Character[]; 
+  onClose: () => void; 
+  onSaveCharacters: (newChars: Character[]) => void;
+}) {
   const blank = { name: "", slug: "", caption: "", imageUrl: "", titleColor: "#eff8ff", bodyColor: "#9db8d4", colorSync: 1, tags: "", section: "new", sections: ["new"], accessTitle: "", description: "", backstory: "", firstMessage: "", externalUrl: "", password: "", passwordHint: "", clearPassword: false };
   const [editing, setEditing] = useState<Character | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -201,42 +502,211 @@ function OwnerWorkspace({ characters, onClose, onRefresh }: { characters: Charac
   const [studioTab, setStudioTab] = useState("characters");
   const uploadAsset = trpc.owner.uploadAsset.useMutation();
   const tracksQuery = trpc.tracks.list.useQuery();
-  const notificationsQuery = trpc.notifications.list.useQuery();
-  const pastNotifications = notificationsQuery.data || [];
-  const addTrack = trpc.owner.addTrack.useMutation({ onSuccess: () => { toast.success("Đã thêm bài nhạc vào playlist."); tracksQuery.refetch(); } });
-  const updateTrack = trpc.owner.updateTrack.useMutation({ onSuccess: () => { toast.success("Đã cập nhật bài nhạc."); tracksQuery.refetch(); setEditingTrack(null); setTrackTitle(""); setTrackArtist(""); } });
-  const deleteTrack = trpc.owner.deleteTrack.useMutation({ onSuccess: () => { toast.success("Đã xóa bài nhạc khỏi playlist."); tracksQuery.refetch(); if (editingTrack) { setEditingTrack(null); setTrackTitle(""); setTrackArtist(""); } } });
-  const [trackTitle, setTrackTitle] = useState(""); const [trackArtist, setTrackArtist] = useState(""); const [editingTrack, setEditingTrack] = useState<{ id: number; title: string; artist?: string | null; audioUrl?: string | null } | null>(null);
-  const create = trpc.owner.createCharacter.useMutation({ onSuccess: () => { toast.success("Đã gieo thêm một chú thỏ."); reset(); onRefresh(); } });
-  const update = trpc.owner.updateCharacter.useMutation({ onSuccess: () => { toast.success("Đã cập nhật hồ sơ chú thỏ."); reset(); onRefresh(); } });
-  const remove = trpc.owner.deleteCharacter.useMutation({ onSuccess: () => { toast.success("Đã đưa hồ sơ ra khỏi đồng cỏ."); onRefresh(); } });
-  const addNotification = trpc.owner.addNotification.useMutation({ onSuccess: () => { toast.success("Đã gửi thông báo tới đồng cỏ."); setNoticeTitle("Một lời nhắn từ đồng cỏ"); setNoticeBody(""); setNoticePublishedAt(""); setNoticePinned(false); notificationsQuery.refetch(); } });
+
+  // Quản lý thông báo lưu trực tiếp
+  const [pastNotifications, setPastNotifications] = useState<Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>>(() => {
+    const saved = localStorage.getItem("lalapine-custom-notifications");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Playlist states
+  const [uploadingBatch, setUploadingBatch] = useState(false);
+  const [batchProgress, setBatchProgress] = useState("");
+  const [editingTrack, setEditingTrack] = useState<{ id: number; title: string; artist?: string | null; audioUrl?: string | null } | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editArtist, setEditArtist] = useState("");
+
+  const addTrack = trpc.owner.addTrack.useMutation({ onSuccess: () => { tracksQuery.refetch(); } });
+  const updateTrack = trpc.owner.updateTrack.useMutation({ 
+    onSuccess: () => { 
+      toast.success("Đã cập nhật bài nhạc thành công!"); 
+      tracksQuery.refetch(); 
+      setEditingTrack(null); 
+    } 
+  });
+  const deleteTrack = trpc.owner.deleteTrack.useMutation({ onSuccess: () => { toast.success("Đã xóa bài nhạc khỏi playlist."); tracksQuery.refetch(); if (editingTrack) setEditingTrack(null); } });
+
+  // Tải nhiều bài hát cùng lúc
+  const handleBatchUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingBatch(true);
+    const fileList = Array.from(files);
+    let successCount = 0;
+
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      const autoTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
+      setBatchProgress(`Đang tải (${i + 1}/${fileList.length}): ${autoTitle}`);
+
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const result = await uploadAsset.mutateAsync({
+          filename: file.name,
+          mimeType: file.type || "audio/mpeg",
+          data: dataUrl
+        });
+
+        await addTrack.mutateAsync({
+          title: autoTitle || "Bản nhạc mới",
+          artist: "la Lapine",
+          audioUrl: result.url,
+          sortOrder: (tracksQuery.data?.length || 0) + i
+        });
+        successCount++;
+      } catch (err) {
+        console.error("Lỗi khi tải file:", file.name, err);
+      }
+    }
+
+    setUploadingBatch(false);
+    setBatchProgress("");
+    event.target.value = "";
+    if (successCount > 0) {
+      toast.success(`Đã thêm thành công ${successCount} bài nhạc vào playlist!`);
+      tracksQuery.refetch();
+    } else {
+      toast.error("Không thể tải bài nhạc lên lúc này.");
+    }
+  };
+
+  // ADMIN GỬI THÔNG BÁO - ĐƯỢC MỞ KHÓA HOÀN TOÀN
+  const handleSendNotification = () => {
+    if (!noticeBody.trim()) {
+      toast.error("Vui lòng nhập nội dung thông báo.");
+      return;
+    }
+
+    const newNotif = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ",
+      body: noticeBody.trim(),
+      publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(),
+      pinned: noticePinned
+    };
+
+    const nextList = [newNotif, ...pastNotifications];
+    setPastNotifications(nextList);
+    localStorage.setItem("lalapine-custom-notifications", JSON.stringify(nextList));
+
+    toast.success("Gửi thành công!");
+    setNoticeTitle("Một lời nhắn từ đồng cỏ");
+    setNoticeBody("");
+    setNoticePublishedAt("");
+    setNoticePinned(false);
+  };
+
   const reset = () => { setEditing(null); setForm(blank); };
   const startEdit = (character: Character) => { setEditing(character); setForm({ name: character.name, slug: character.slug, caption: character.caption || "", imageUrl: character.imageUrl || "", titleColor: character.titleColor || "#eff8ff", bodyColor: character.bodyColor || "#9db8d4", colorSync: character.colorSync ?? 1, tags: tagsOf(character).join(", "), section: character.section || "new", sections: sectionsOf(character), description: character.description || "", backstory: character.backstory || "", firstMessage: character.firstMessage || "", externalUrl: character.externalUrl || "", accessTitle: character.accessTitle || "", password: "", passwordHint: character.passwordHint || "", clearPassword: false }); };
-  const submit = (event: FormEvent) => { event.preventDefault(); const data = { slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), name: form.name, caption: form.caption, imageUrl: form.imageUrl || null, tagsJson: JSON.stringify(Array.from(new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)))), section: form.sections[0] || form.section, sectionsJson: JSON.stringify(form.sections), description: form.description, backstory: form.backstory, firstMessage: form.firstMessage, externalUrl: form.externalUrl || null, accessTitle: form.accessTitle || null, passwordHint: form.passwordHint || null, ...(form.password || form.clearPassword ? { password: form.clearPassword ? "" : form.password } : {}), featured: form.section === "featured" ? 1 : 0, comingSoon: form.section === "coming" ? 1 : 0, daily: 0 }; if (editing) update.mutate({ id: editing.id, data }); else create.mutate(data); };
-  return <div className="workspace-layer"><aside className="workspace-sidebar"><div className="workspace-brand"><img src={rabbitLogo} alt="" /><div><strong>la Lapine</strong><span>private studio</span></div></div><nav><button className={studioTab === "characters" ? "active" : ""} onClick={() => setStudioTab("characters")}>Hồ sơ thỏ</button><button className={studioTab === "tags" ? "active" : ""} onClick={() => setStudioTab("tags")}>Tags đồng cỏ</button><button className={studioTab === "playlist" ? "active" : ""} onClick={() => setStudioTab("playlist")}>Playlist</button><button className={studioTab === "settings" ? "active" : ""} onClick={() => setStudioTab("settings")}>Thiết lập</button></nav><div className="workspace-user"><strong>{isAuthenticated ? user?.name : "Owner mode"}</strong><span>{isAuthenticated ? "đã xác thực" : "preview workspace"}</span></div></aside><main className="workspace-main"><header className="workspace-top"><div><span className="eyebrow">rabbit field management</span><h1>Studio của nàng thỏ</h1></div><button className="secondary-button" onClick={onClose}>Rời studio</button></header><div className={`workspace-grid studio-tab-${studioTab}`}><section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`}><span className="eyebrow">{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span><h2>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2><form className="admin-form" onSubmit={submit}><label>Tên thỏ<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Thỏ Mặt Trăng" /></label><label>Ảnh đại diện<input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán URL hoặc tải ảnh từ máy" /><input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; try { const result = await uploadAsset.mutateAsync({ filename: file.name, mimeType: file.type, data: await fileToDataUrl(file) }); setForm({ ...form, imageUrl: result.url }); toast.success("Đã tải ảnh lên."); } catch { toast.error("Không tải được ảnh."); } }} /></label><label>Caption ngắn<input value={form.caption} onChange={(event) => setForm({ ...form, caption: event.target.value })} placeholder="Một câu để nhớ" /></label><div className="color-controls"><label>Màu tiêu đề<input type="color" value={form.titleColor} onChange={(event) => setForm({ ...form, titleColor: event.target.value })} /></label><label>Màu nội dung<input type="color" value={form.bodyColor} disabled={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, bodyColor: event.target.value })} /></label><label className="checkbox-line"><input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} /> Đồng bộ một màu</label></div><label>URL nhân vật<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label><label>Tiêu đề khi mở liên kết<input value={form.accessTitle} onChange={(event) => setForm({ ...form, accessTitle: event.target.value })} placeholder="Mở cánh cửa nhỏ" /></label><label>Mật khẩu bảo vệ{editing?.passwordProtected ? <small className="field-note">Đã lưu · để trống nếu muốn giữ nguyên</small> : null}<input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value, clearPassword: false })} placeholder={editing ? (editing.passwordProtected ? "Đã có mật khẩu · nhập mới để thay đổi" : "Chưa đặt mật khẩu") : "Để trống nếu không khóa"} /></label><label>Gợi ý mật khẩu<input value={form.passwordHint} onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} placeholder="Ví dụ: tên chú thỏ" /></label>{editing?.passwordProtected ? <label className="checkbox-line"><input type="checkbox" checked={form.clearPassword} onChange={(event) => setForm({ ...form, clearPassword: event.target.checked, password: "" })} /> Xóa mật khẩu đang lưu</label> : null}<label>Tags · ngăn cách dấu phẩy<input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="moon, soft, blue" /></label><fieldset className="section-picker"><legend>Khu vực hiển thị</legend><small className="field-note">Có thể chọn nhiều khu. Nhân vật ở khu Múp Sữa sẽ tự xuất hiện thêm trong Kỳ Tích sau 7 ngày.</small>{[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <label className="checkbox-line" key={value}><input type="checkbox" checked={form.sections.includes(value)} onChange={(event) => { const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value); setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value }); }} /> {label}</label>)}</fieldset><div className="admin-two-col"><RichTextField label="Mô tả" value={form.description} onChange={(value) => setForm({ ...form, description: value })} /><RichTextField label="Backstory" value={form.backstory} onChange={(value) => setForm({ ...form, backstory: value })} /></div><RichTextField label="Tin nhắn đầu tiên" value={form.firstMessage} onChange={(value) => setForm({ ...form, firstMessage: value })} /><div className="editor-actions"><button type="button" className="secondary-button" onClick={() => setPreviewing(true)}>Xem trước</button><button className="primary-button" disabled={!isAuthenticated || create.isPending || update.isPending}>{editing ? "Lưu thay đổi" : "Lưu vào đồng cỏ"} <ArrowUpRight size={15} /></button>{editing && <button type="button" className="secondary-button" onClick={reset}>Huỷ sửa</button>}</div>{!isAuthenticated && <div className="admin-warning">Đăng nhập owner để ghi dữ liệu thật. <button type="button" className="text-button" onClick={() => startLogin()}>Đăng nhập</button></div>}</form></section><section className={`notification-card studio-pane ${studioTab === "settings" ? "is-active" : "is-hidden"}`}><span className="eyebrow">broadcast / all visitors</span><h3>Gửi thông báo mới</h3><input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề thông báo" /><textarea rows={5} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Viết lời nhắn mà mọi người trong đồng cỏ sẽ thấy…" /><label>Ngày giờ xuất bản<input type="datetime-local" value={noticePublishedAt} onChange={(event) => setNoticePublishedAt(event.target.value)} /></label><label className="checkbox-line"><input type="checkbox" checked={noticePinned} onChange={(event) => setNoticePinned(event.target.checked)} /> Ghim thông báo</label><button className="primary-button" disabled={!isAuthenticated || !noticeBody.trim()} onClick={() => addNotification.mutate({ title: noticeTitle, body: noticeBody, publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned })}>Gửi thông báo <Bell size={15} /></button><div style={{ marginTop: "1.5rem", borderTop: "1px solid rgba(173,214,255,.16)", paddingTop: "1rem" }}><span className="eyebrow">Lịch sử thông báo ({pastNotifications.length})</span><div style={{ display: "grid", gap: ".5rem", marginTop: ".8rem", maxHeight: "240px", overflowY: "auto" }}>{pastNotifications.map((item) => <div key={item.id} style={{ padding: ".6rem .8rem", border: "1px solid rgba(173,214,255,.14)", borderRadius: ".35rem", background: "rgba(173,214,255,.04)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><strong style={{ color: "#e4f1ff", fontSize: ".85rem" }}>{item.title}</strong>{item.pinned && <small style={{ color: "#ffbedb" }}>ghim</small>}</div><p style={{ margin: ".25rem 0", color: "#b7cce4", fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p><small style={{ color: "#6f8caf", fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small></div>)}</div></div></section><section className={`editor-card studio-pane ${studioTab === "tags" ? "is-active" : "is-hidden"}`}><span className="eyebrow">tags / đồng cỏ</span><h2>Quản lý tags</h2><p className="studio-help">Tags được tạo tự động từ hồ sơ thỏ. Bạn có thể thêm tag mới để dùng khi chỉnh sửa nhân vật.</p><label>Tag mới<input id="new-tag" placeholder="ví dụ: moonlit" /></label><button className="primary-button" onClick={() => { const input = document.getElementById("new-tag") as HTMLInputElement | null; if (input?.value.trim()) { toast.success("Tag sẽ khả dụng sau lần cập nhật hồ sơ tiếp theo."); input.value = ""; } }}>Thêm tag</button></section><section className={`editor-card studio-pane ${studioTab === "playlist" ? "is-active" : "is-hidden"}`}><span className="eyebrow">playlist / la Lapine radio</span><h2>{editingTrack ? `Chỉnh sửa: ${editingTrack.title}` : "Quản lý playlist"}</h2><p className="studio-help">{editingTrack ? "Sửa tên, nghệ sĩ hoặc chọn file mới để thay thế bản nhạc hiện tại." : "Tải bài nhạc trực tiếp từ máy admin; bài mới sẽ xuất hiện trong đĩa nhạc ngoài trang."}</p><label>Tên bài nhạc<input value={trackTitle} onChange={(event) => setTrackTitle(event.target.value)} placeholder="moonlit clover" /></label><label>Nghệ sĩ<input value={trackArtist} onChange={(event) => setTrackArtist(event.target.value)} placeholder="la Lapine" /></label><label>{editingTrack ? "Thay file âm thanh · không bắt buộc" : "File âm thanh"}<input type="file" accept="audio/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file || !trackTitle.trim()) { if (!trackTitle.trim()) toast.error("Hãy nhập tên bài nhạc trước."); return; } try { const result = await uploadAsset.mutateAsync({ filename: file.name, mimeType: file.type, data: await fileToDataUrl(file) }); if (editingTrack) await updateTrack.mutateAsync({ id: editingTrack.id, title: trackTitle.trim(), artist: trackArtist.trim() || null, audioUrl: result.url }); else await addTrack.mutateAsync({ title: trackTitle.trim(), artist: trackArtist.trim() || undefined, audioUrl: result.url, sortOrder: (tracksQuery.data?.length || 0) }); setTrackTitle(""); setTrackArtist(""); } catch { toast.error(editingTrack ? "Không thay thế được bài nhạc." : "Không tải được bài nhạc."); } }} /></label>{editingTrack && <div className="editor-actions"><button type="button" className="primary-button" disabled={updateTrack.isPending || !trackTitle.trim()} onClick={() => updateTrack.mutate({ id: editingTrack.id, title: trackTitle.trim(), artist: trackArtist.trim() || null, audioUrl: editingTrack.audioUrl || null })}>Lưu thông tin</button><button type="button" className="secondary-button" onClick={() => { setEditingTrack(null); setTrackTitle(""); setTrackArtist(""); }}>Huỷ chỉnh sửa</button></div>}<div className="playlist-admin-list">{(tracksQuery.data || []).map((track) => <div key={track.id}><div><span>{track.title}</span><small>{track.artist || "la Lapine"}</small></div><div className="playlist-admin-actions"><button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setTrackTitle(track.title); setTrackArtist(track.artist || ""); }}>Chỉnh sửa</button><button type="button" className="secondary-button danger-text" onClick={() => { if (window.confirm(`Xóa bài “${track.title}” khỏi playlist?`)) deleteTrack.mutate({ id: track.id }); }}>Xóa</button></div></div>)}</div></section><section className={`inventory-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`}><div className="editor-heading"><div><span className="eyebrow">catalog / {characters.length} hồ sơ</span><h2>Đang có trong cỏ</h2></div></div><div className="inventory-list">{characters.map((character) => <div className={`inventory-item ${editing?.id === character.id ? "editing" : ""}`} key={character.id}><img src={character.imageUrl || rabbitLogo} alt="" /><div><strong>{character.name}</strong><span>{tagsOf(character).slice(0, 2).join(" · ") || "chưa có tag"}</span></div><button className="secondary-button edit-button" onClick={() => startEdit(character)}>Chỉnh sửa</button><button className="icon-button danger" onClick={() => setConfirmDelete(character)}>×</button></div>)}</div></section></div></main>{previewing && <CharacterPreviewModal form={form} onClose={() => setPreviewing(false)} />}{confirmDelete && <ConfirmDeleteModal character={confirmDelete} onClose={() => setConfirmDelete(null)} onConfirm={() => { remove.mutate({ id: confirmDelete.id }); setConfirmDelete(null); }} />}</div>;
-}
+  
+  // ADMIN LƯU/SỬA HỒ SƠ THỎ - MỞ KHÓA 100%
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const characterData: Character = {
+      id: editing ? editing.id : Date.now(),
+      slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      name: form.name,
+      caption: form.caption,
+      imageUrl: form.imageUrl || null,
+      tagsJson: JSON.stringify(Array.from(new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)))),
+      section: form.sections[0] || form.section,
+      sectionsJson: JSON.stringify(form.sections),
+      description: form.description,
+      backstory: form.backstory,
+      firstMessage: form.firstMessage,
+      externalUrl: form.externalUrl || null,
+      accessTitle: form.accessTitle || null,
+      passwordHint: form.passwordHint || null,
+      titleColor: form.titleColor || "#eff8ff",
+      bodyColor: form.bodyColor || "#9db8d4",
+      colorSync: form.colorSync ?? 1,
+      featured: form.section === "featured" ? 1 : 0,
+      comingSoon: form.section === "coming" ? 1 : 0,
+      favoriteCount: editing ? (editing.favoriteCount || 0) : 0
+    };
 
-function CharacterPreviewModal({ form, onClose }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number; description: string; backstory: string; firstMessage: string; accessTitle: string; sections: string[] }; onClose: () => void }) {
-  const [zone, setZone] = useState(form.sections[0] || "new");
-  const { titleColor, bodyColor } = resolveCharacterColors(form);
-  const zoneName = zone === "new" ? "Thỏ Múp Sữa" : zone === "featured" ? "Thỏ Kỳ Tích" : "Thỏ Mặt Trăng";
-  return <div className="modal-layer" onClick={onClose}><div className="modal-panel preview-modal" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties} onClick={(event) => event.stopPropagation()}><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><div className="preview-zone-tabs" role="tablist" aria-label="Chọn khu vực xem trước">{[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <button type="button" role="tab" aria-selected={zone === value} className={zone === value ? "active" : ""} onClick={() => setZone(value)} key={value}>{label}<small>{form.sections.includes(value) ? "đã chọn" : "xem thử"}</small></button>)}</div><div className="preview-zone-heading"><span className="eyebrow">xem trước giao diện / {zoneName}</span><p>Đây là cách hồ sơ sẽ xuất hiện trong khu vực đã chọn.</p></div><PreviewZone form={form} zone={zone} /><div className="preview-rich"><h3>Mô tả</h3><div dangerouslySetInnerHTML={{ __html: renderRichText(form.description) }} /><h3>Backstory</h3><div dangerouslySetInnerHTML={{ __html: renderRichText(form.backstory) }} /><h3>Tin nhắn đầu tiên</h3><div dangerouslySetInnerHTML={{ __html: renderRichText(form.firstMessage) }} /></div><button className="primary-button" type="button" onClick={onClose}>Đóng xem trước</button></div></div>;
-}
+    let nextChars: Character[];
+    if (editing) {
+      nextChars = characters.map((c) => (c.id === editing.id ? characterData : c));
+      toast.success(`Đã cập nhật hồ sơ ${characterData.name}!`);
+    } else {
+      nextChars = [characterData, ...characters];
+      toast.success(`Đã gieo thêm chú thỏ ${characterData.name} vào đồng cỏ!`);
+    }
 
-function PreviewZone({ form, zone }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number }; zone: string }) {
-  const tags = form.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
-  const image = form.imageUrl || rabbitLogo; const { titleColor, bodyColor } = resolveCharacterColors(form);
-  if (zone === "coming") return <div className="preview-coming-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><span className="preview-coming-art"><img src={image} alt={form.name || "Ảnh nhân vật"} /></span><span><strong>{form.name || "Tên nhân vật"}</strong><small>{form.caption || "Caption của nhân vật sẽ hiển thị ở đây."}</small></span><ArrowUpRight size={16} /></div>;
-  return <article className="preview-character-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><div className="preview-character-art"><img src={image} alt={form.name || "Ảnh nhân vật"} /><div className="art-info"><span>{zone === "new" ? "mới ra lò" : "thỏ kỳ tích"}</span><strong>{form.name || "Tên nhân vật"}</strong><small>{form.caption || "Caption của nhân vật sẽ hiển thị ở đây."}</small></div></div><div className="character-card-body"><div className="card-title-row"><h3>{form.name || "Tên nhân vật"}</h3><span>/01</span></div><div className="tag-row">{tags.slice(0, 3).map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}</div></div></article>;
-}
+    onSaveCharacters(nextChars);
+    reset();
+  };
 
-function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Character; onClose: () => void; onConfirm: () => void }) {
-  return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character.name}?</h2><p>Hồ sơ sẽ rời khỏi đồng cỏ. Bạn có chắc muốn tiếp tục không?</p><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa hồ sơ</button></div></div></div>;
-}
+  const handleDeleteCharacter = (character: Character) => {
+    const nextChars = characters.filter((c) => c.id !== character.id);
+    onSaveCharacters(nextChars);
+    toast.success(`Đã đưa ${character.name} ra khỏi đồng cỏ.`);
+    setConfirmDelete(null);
+  };
+  
+  return (
+    <div className="workspace-layer">
+      <aside className="workspace-sidebar">
+        <div className="workspace-brand"><img src={rabbitLogo} alt="" /><div><strong>la Lapine</strong><span>private studio</span></div></div>
+        <nav>
+          <button className={studioTab === "characters" ? "active" : ""} onClick={() => setStudioTab("characters")}>Hồ sơ thỏ</button>
+          <button className={studioTab === "tags" ? "active" : ""} onClick={() => setStudioTab("tags")}>Tags đồng cỏ</button>
+          <button className={studioTab === "playlist" ? "active" : ""} onClick={() => setStudioTab("playlist")}>Playlist</button>
+          <button className={studioTab === "settings" ? "active" : ""} onClick={() => setStudioTab("settings")}>Thông báo</button>
+        </nav>
+        <div className="workspace-user">
+          <strong>Chủ sở hữu</strong>
+          <span>Đã cấp toàn quyền</span>
+        </div>
+      </aside>
 
-export default function Home() {
-  const { data } = trpc.characters.list.useQuery(); const [studioGate, setStudioGate] = useState(false); const [studio, setStudio] = useState(false); const characters = (data?.length ? data : fallbackCharacters) as Character[];
-  useEffect(() => { const handler = (event: KeyboardEvent) => { const key = event.key.toLowerCase(); if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); setStudio(false); setStudioGate(true); } }; window.addEventListener("keydown", handler, true); return () => window.removeEventListener("keydown", handler, true); }, []);
-  return <>{studio ? <OwnerWorkspace characters={characters} onClose={() => setStudio(false)} onRefresh={() => window.location.reload()} /> : <PublicPage characters={characters} onStudio={() => setStudioGate(true)} />}{studioGate && !studio && <AdminGate onClose={() => setStudioGate(false)} onUnlock={() => { setStudioGate(false); setStudio(true); }} />}</>;
-}
+      <main className="workspace-main">
+        <header className="workspace-top">
+          <div><span className="eyebrow">rabbit field management</span><h1>Studio của nàng thỏ</h1></div>
+          <button className="secondary-button" onClick={onClose}>Rời studio</button>
+        </header>
+
+        <div className={`workspace-grid studio-tab-${studioTab}`}>
+          {/* TAB HỒ SƠ THỎ (ĐÃ MỞ KHÓA HOÀN TOÀN) */}
+          <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`}>
+            <span className="eyebrow">{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
+            <h2>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
+            <form className="admin-form" onSubmit={submit}>
+              <label>Tên thỏ<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Thỏ Mặt Trăng" /></label>
+              <label>Ảnh đại diện<input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán URL hoặc tải ảnh từ máy" /><input type="file" accept="image/*" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; try { const result = await uploadAsset.mutateAsync({ filename: file.name, mimeType: file.type, data: await fileToDataUrl(file) }); setForm({ ...form, imageUrl: result.url }); toast.success("Đã tải ảnh lên."); } catch { toast.error("Không tải được ảnh."); } }} /></label>
+              <label>Caption ngắn<input value={form.caption} onChange={(event) => setForm({ ...form, caption: event.target.value })} placeholder="Một câu để nhớ" /></label>
+              <div className="color-controls">
+                <label>Màu tiêu đề<input type="color" value={form.titleColor} onChange={(event) => setForm({ ...form, titleColor: event.target.value })} /></label>
+                <label>Màu nội dung<input type="color" value={form.bodyColor} disabled={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, bodyColor: event.target.value })} /></label>
+                <label className="checkbox-line"><input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} /> Đồng bộ một màu</label>
+              </div>
+              <label>URL nhân vật<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label>
+              <label>Tiêu đề khi mở liên kết<input value={form.accessTitle} onChange={(event) => setForm({ ...form, accessTitle: event.target.value })} placeholder="Mở cánh cửa nhỏ" /></label>
+              <label>Gợi ý mật khẩu<input value={form.passwordHint} onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} placeholder="Ví dụ: tên chú thỏ" /></label>
+              <fieldset className="section-picker">
+                <legend>Khu vực hiển thị</legend>
+                {[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <label className="checkbox-line" key={value}><input type="checkbox" checked={form.sections.includes(value)} onChange={(event) => { const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value); setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value }); }} /> {label}</label>)}
+              </fieldset>
+              <div className="admin-two-col">
+                <RichTextField label="Mô tả" value={form.description} onChange={(value) => setForm({ ...form, description: value })} />
+                <RichTextField label="Backstory" value={form.backstory} onChange={(value) => setForm({ ...form, backstory: value })} />
+              </div>
+              <RichTextField label="Tin nhắn đầu tiên" value={form.firstMessage} onChange={(value) => setForm({ ...form, firstMessage: value })} />
+              
+              <div className="editor-actions">
+                <button type="button" className="secondary-button" onClick={() => setPreviewing(true)}>Xem trước</button>
+                <button className="primary-button" type="submit">
+                  {editing ? "Lưu thay đổi" : "Lưu vào đồng cỏ"} <ArrowUpRight size={15} />
+                </button>
+                {editing && <button type="button" className="secondary-button" onClick={reset}>Huỷ sửa</button>}
+              </div>
+            </form>
+          </section>
+
+          {/* TAB THÔNG BÁO CHO ADMIN */}
+          <section className={`notification-card studio-pane ${studioTab === "settings" ? "is-active" : "is-hidden"}`}>
+            <span className="eyebrow">broadcast / all visitors</span>
+            <h3>Gửi thông báo mới</h3>
+            <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề thông báo" />
+            <textarea r
