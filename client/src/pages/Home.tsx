@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU (GỢN SÓNG MỎNG NHẸ + POPUP RÕ NÉT) ====================
+// ==================== MÀN HÌNH BẮT ĐẦU (LOGO XUẤT HIỆN TỪ TO THU NHỎ LẠI + SÓNG LAN RỘNG MỜ ẢO) ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,60 +106,61 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 40%, #0d2853 0%, #06122a 75%, #030a18 100%)",
+        background: "radial-gradient(circle at 50% 40%, #0d2853 0%, #06122a 70%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         padding: "2rem",
         textAlign: "center",
-        color: "#edf5ff"
+        color: "#edf5ff",
+        overflow: "hidden"
       }}
     >
       <style>{`
-        /* HIỆU ỨNG POP-UP RÕ RÀNG, ĐÁNG CHÚ Ý NHƯNG VẪN MƯỢT MÀ */
-        @keyframes noticeable-logo-pop {
+        /* HIỆU ỨNG LOGO: TỪ GIỮA MÀN HÌNH TO RỒI THU NHỎ DẦN LẠI VÀ ĐÁP XUỐNG */
+        @keyframes logo-shrink-settle {
           0% {
-            transform: scale(0.15);
+            transform: scale(2.6);
             opacity: 0;
-            filter: drop-shadow(0 0 0px transparent);
+            filter: blur(10px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
           }
-          65% {
-            transform: scale(1.1);
-            opacity: 1;
-            filter: drop-shadow(0 0 30px rgba(162, 218, 255, 0.7));
+          45% {
+            opacity: 0.92;
+            filter: blur(2px) drop-shadow(0 0 28px rgba(162, 218, 255, 0.5));
           }
-          85% {
-            transform: scale(0.97);
+          75% {
+            transform: scale(0.95);
             opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.4));
           }
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: drop-shadow(0 0 22px rgba(162, 218, 255, 0.5));
+            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.35));
           }
         }
 
-        /* 2 VÒNG GỢN SÓNG: MỎNG NHẸ, MỜ DỊU, LAN TỎA CHẬM RÃI */
-        @keyframes delicate-wave {
+        /* GỢN SÓNG: LAN CỰC KỲ RỘNG, MỜ DỊU, KHÔNG CHÓI MẮT NHƯNG VẪN THẤY RÕ */
+        @keyframes wide-gentle-wave {
           0% {
-            transform: scale(0.65);
-            opacity: 0.65;
+            transform: scale(0.5);
+            opacity: 0.45;
           }
-          50% {
-            opacity: 0.35;
+          40% {
+            opacity: 0.22;
           }
           100% {
-            transform: scale(2.6);
+            transform: scale(4.2);
             opacity: 0;
           }
         }
 
-        /* HIỆU ỨNG CHỮ VÀ NÚT XUẤT HIỆN ÊM DỊU */
-        @keyframes text-fade-in-slow {
+        /* CHỮ VÀ NÚT XUẤT HIỆN SAU KHI LOGO ĐÃ THU NHỎ XONG */
+        @keyframes intro-text-appear {
           0% {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(14px);
           }
           100% {
             opacity: 1;
@@ -167,23 +168,23 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           }
         }
 
-        .delicate-wave-ring {
+        .wide-wave-ring {
           position: absolute;
           border-radius: 50%;
-          border: 1px solid rgba(173, 214, 255, 0.32);
-          background: radial-gradient(circle, rgba(173, 214, 255, 0.08) 0%, transparent 70%);
-          box-shadow: 0 0 16px rgba(142, 208, 255, 0.2);
+          border: 1px solid rgba(173, 214, 255, 0.22);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.05) 0%, transparent 72%);
+          filter: blur(2px);
           pointer-events: none;
         }
       `}</style>
 
-      {/* VÙNG CHỨA LOGO VÀ 2 GỢN SÓNG MỎNG NHẸ */}
-      <div style={{ position: "relative", width: "160px", height: "160px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
-        {/* Chỉ 2 gợn sóng mỏng nhẹ lan tỏa cách nhau 1.8 giây */}
-        <div className="delicate-wave-ring" style={{ width: "120px", height: "120px", animation: "delicate-wave 3.6s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
-        <div className="delicate-wave-ring" style={{ width: "120px", height: "120px", animation: "delicate-wave 3.6s cubic-bezier(0, 0.2, 0.8, 1) infinite 1.8s" }} />
+      {/* VÙNG LOGO VÀ SÓNG LAN TỎA */}
+      <div style={{ position: "relative", width: "170px", height: "170px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
+        {/* 2 Vòng sóng lan cực rộng và mờ dịu */}
+        <div className="wide-wave-ring" style={{ width: "125px", height: "125px", animation: "wide-gentle-wave 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
+        <div className="wide-wave-ring" style={{ width: "125px", height: "125px", animation: "wide-gentle-wave 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.1s" }} />
 
-        {/* LOGO ĐÈ LÊN SÓNG VỚI HIỆU ỨNG POP-UP RÕ RÀNG */}
+        {/* LOGO BẮT ĐẦU TỪ TO VÀ THU NHỎ LẠI VÀO TÂM */}
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
@@ -193,20 +194,20 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             objectFit: "contain", 
             position: "relative", 
             zIndex: 10,
-            animation: "noticeable-logo-pop 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) both"
+            animation: "logo-shrink-settle 1.8s cubic-bezier(0.16, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN PAGE VÀ CẢNH BÁO */}
-      <div style={{ animation: "text-fade-in-slow 1.6s ease-out 0.6s both" }}>
+      {/* TÊN TRANG WEB VÀ CẢNH BÁO TUỔI */}
+      <div style={{ animation: "intro-text-appear 1.6s ease-out 0.9s both" }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.5rem, 6vw, 3.8rem)", 
           margin: "0 0 0.5rem",
           letterSpacing: "0.04em",
           color: "#f1f8ff",
-          textShadow: "0 0 20px rgba(173, 214, 255, 0.3)"
+          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
         }}>
           la Lapine
         </h1>
@@ -888,7 +889,6 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
-// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -896,7 +896,6 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const clean = pass.trim();
-    // CHỈ CHẤP NHẬN DUY NHẤT MẬT KHẨU jk0807
     if (clean === MASTER_PASSWORD) { 
       onUnlock(); 
       return; 
