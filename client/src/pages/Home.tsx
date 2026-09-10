@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
 
-// MẬT KHẨU STUDIO (Mật khẩu gốc: jk0807)
-const MASTER_PASSWORDS = ["jk0807"];
+// MẬT KHẨU STUDIO DUY NHẤT
+const MASTER_PASSWORD = "jk0807";
 
 type Character = {
   id: number;
@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU (GỢN SÓNG SIÊU MỜ + POPUP CHẬM RÃI) ====================
+// ==================== MÀN HÌNH BẮT ĐẦU (GỢN SÓNG MỎNG NHẸ + POPUP RÕ NÉT) ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,7 +106,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 42%, #0a2347 0%, #06122a 65%, #030814 100%)",
+        background: "radial-gradient(circle at 50% 40%, #0d2853 0%, #06122a 75%, #030a18 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -117,49 +117,49 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* GỢN SÓNG SIÊU MỜ, HÒA VÀO NỀN, KHÔNG GẮNG RÕ */
-        @keyframes soft-ripple {
+        /* HIỆU ỨNG POP-UP RÕ RÀNG, ĐÁNG CHÚ Ý NHƯNG VẪN MƯỢT MÀ */
+        @keyframes noticeable-logo-pop {
           0% {
-            transform: scale(0.65);
-            opacity: 0.18;
-          }
-          45% {
-            opacity: 0.08;
-          }
-          100% {
-            transform: scale(3.2);
+            transform: scale(0.15);
             opacity: 0;
+            filter: drop-shadow(0 0 0px transparent);
           }
-        }
-
-        /* LOGO XUẤT HIỆN POP-UP CHẬM RÃI (2.4 GIÂY) MƯỢT NHƯ GIẤC MƠ */
-        @keyframes logo-bloom-slow {
-          0% {
-            transform: scale(0.35) translateY(16px);
-            opacity: 0;
-            filter: blur(8px) drop-shadow(0 0 0px transparent);
-          }
-          60% {
-            opacity: 0.85;
-            filter: blur(1.5px) drop-shadow(0 0 16px rgba(154, 212, 255, 0.25));
+          65% {
+            transform: scale(1.1);
+            opacity: 1;
+            filter: drop-shadow(0 0 30px rgba(162, 218, 255, 0.7));
           }
           85% {
-            transform: scale(1.03) translateY(-2px);
-            opacity: 0.98;
-            filter: blur(0) drop-shadow(0 0 24px rgba(154, 212, 255, 0.35));
+            transform: scale(0.97);
+            opacity: 1;
           }
           100% {
-            transform: scale(1) translateY(0);
+            transform: scale(1);
             opacity: 1;
-            filter: blur(0) drop-shadow(0 0 20px rgba(154, 212, 255, 0.28));
+            filter: drop-shadow(0 0 22px rgba(162, 218, 255, 0.5));
           }
         }
 
-        /* HIỆU ỨNG HIỆN CHẬM CHO CHỮ VÀ NÚT */
-        @keyframes content-fade-slow {
+        /* 2 VÒNG GỢN SÓNG: MỎNG NHẸ, MỜ DỊU, LAN TỎA CHẬM RÃI */
+        @keyframes delicate-wave {
+          0% {
+            transform: scale(0.65);
+            opacity: 0.65;
+          }
+          50% {
+            opacity: 0.35;
+          }
+          100% {
+            transform: scale(2.6);
+            opacity: 0;
+          }
+        }
+
+        /* HIỆU ỨNG CHỮ VÀ NÚT XUẤT HIỆN ÊM DỊU */
+        @keyframes text-fade-in-slow {
           0% {
             opacity: 0;
-            transform: translateY(14px);
+            transform: translateY(12px);
           }
           100% {
             opacity: 1;
@@ -167,24 +167,23 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           }
         }
 
-        .ethereal-ripple {
+        .delicate-wave-ring {
           position: absolute;
           border-radius: 50%;
-          border: 1px solid rgba(173, 214, 255, 0.08);
-          background: radial-gradient(circle, rgba(173, 214, 255, 0.04) 0%, transparent 72%);
-          filter: blur(2.5px);
+          border: 1px solid rgba(173, 214, 255, 0.32);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.08) 0%, transparent 70%);
+          box-shadow: 0 0 16px rgba(142, 208, 255, 0.2);
           pointer-events: none;
         }
       `}</style>
 
-      {/* VÙNG CHỨA LOGO VÀ SÓNG MỜ ẢO */}
-      <div style={{ position: "relative", width: "170px", height: "170px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
-        {/* 3 Lớp sóng lan tỏa cực kỳ mờ, gần như hòa vào background */}
-        <div className="ethereal-ripple" style={{ width: "135px", height: "135px", animation: "soft-ripple 4.5s ease-out infinite 0s" }} />
-        <div className="ethereal-ripple" style={{ width: "135px", height: "135px", animation: "soft-ripple 4.5s ease-out infinite 1.5s" }} />
-        <div className="ethereal-ripple" style={{ width: "135px", height: "135px", animation: "soft-ripple 4.5s ease-out infinite 3.0s" }} />
+      {/* VÙNG CHỨA LOGO VÀ 2 GỢN SÓNG MỎNG NHẸ */}
+      <div style={{ position: "relative", width: "160px", height: "160px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
+        {/* Chỉ 2 gợn sóng mỏng nhẹ lan tỏa cách nhau 1.8 giây */}
+        <div className="delicate-wave-ring" style={{ width: "120px", height: "120px", animation: "delicate-wave 3.6s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
+        <div className="delicate-wave-ring" style={{ width: "120px", height: "120px", animation: "delicate-wave 3.6s cubic-bezier(0, 0.2, 0.8, 1) infinite 1.8s" }} />
 
-        {/* LOGO NỞ CHẬM ĐÈ LÊN SÓNG */}
+        {/* LOGO ĐÈ LÊN SÓNG VỚI HIỆU ỨNG POP-UP RÕ RÀNG */}
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
@@ -194,20 +193,20 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             objectFit: "contain", 
             position: "relative", 
             zIndex: 10,
-            animation: "logo-bloom-slow 2.4s cubic-bezier(0.16, 1, 0.3, 1) both"
+            animation: "noticeable-logo-pop 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) both"
           }} 
         />
       </div>
 
-      {/* PHẦN CHỮ VÀ NÚT XUẤT HIỆN SAU MỘT NHỊP RẤT ÊM ÁI */}
-      <div style={{ animation: "content-fade-slow 1.8s ease-out 0.8s both" }}>
+      {/* TÊN PAGE VÀ CẢNH BÁO */}
+      <div style={{ animation: "text-fade-in-slow 1.6s ease-out 0.6s both" }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.5rem, 6vw, 3.8rem)", 
           margin: "0 0 0.5rem",
           letterSpacing: "0.04em",
           color: "#f1f8ff",
-          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
+          textShadow: "0 0 20px rgba(173, 214, 255, 0.3)"
         }}>
           la Lapine
         </h1>
@@ -219,7 +218,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           letterSpacing: "0.08em",
           textTransform: "lowercase",
           fontFamily: '"DM Mono", monospace',
-          opacity: 0.8
+          opacity: 0.85
         }}>
           không dành cho người dưới 18 tuổi.
         </p>
@@ -234,12 +233,11 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             borderRadius: "999px",
-            boxShadow: "0 0 25px rgba(185, 221, 255, 0.3)",
+            boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
             display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            cursor: "pointer",
-            transition: "all 0.3s ease"
+            cursor: "pointer"
           }}
         >
           <Sparkles size={14} /> Bắt đầu hành trình
@@ -890,15 +888,45 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
+// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
-  const [pass, setPass] = useState(""); const [error, setError] = useState(""); const unlock = trpc.owner.unlock.useMutation();
+  const [pass, setPass] = useState(""); 
+  const [error, setError] = useState(""); 
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const clean = pass.trim().toLowerCase();
-    if (MASTER_PASSWORDS.includes(clean)) { onUnlock(); return; }
-    try { const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); } catch { setError("Mật khẩu không chính xác."); }
+    const clean = pass.trim();
+    // CHỈ CHẤP NHẬN DUY NHẤT MẬT KHẨU jk0807
+    if (clean === MASTER_PASSWORD) { 
+      onUnlock(); 
+      return; 
+    }
+    setError("Mật khẩu không chính xác.");
   };
-  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Nhập mật khẩu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
+
+  return (
+    <div className="modal-layer">
+      <div className="modal-panel admin-gate">
+        <button className="icon-button modal-close" onClick={onClose}><X size={18} /></button>
+        <img src={rabbitLogo} alt="" className="gate-rabbit" />
+        <span className="eyebrow">private studio / owner only</span>
+        <h2>Vào phòng cỏ riêng</h2>
+        <form onSubmit={submit}>
+          <input 
+            autoFocus 
+            type="password" 
+            value={pass} 
+            onChange={(event) => setPass(event.target.value)} 
+            placeholder="Nhập mật khẩu" 
+          />
+          {error && <div className="form-error">{error}</div>}
+          <button className="primary-button full-width" type="submit">
+            Mở studio <ArrowUpRight size={15} />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // ==================== WORKSPACE ====================
