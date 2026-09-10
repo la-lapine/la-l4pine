@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1788518343169,
+      "tag": "0000_adorable_synch",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1788518486107,
+      "tag": "0001_mute_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1788545794866,
+      "tag": "0002_sloppy_pete_wisdom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1788684211953,
+      "tag": "0003_fearless_devos",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1788778438432,
+      "tag": "0004_kind_ultimates",
+      "breakpoints": true
+    }
+  ]
+}
