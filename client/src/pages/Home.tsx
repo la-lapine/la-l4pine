@@ -10,7 +10,7 @@ import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
 
 // MẬT KHẨU STUDIO (Mật khẩu gốc: jk0807 hoặc lapine)
-const MASTER_PASSWORDS = ["jk0807", "lapine", "123456"];
+const MASTER_PASSWORDS = ["jk0807"];
 
 type Character = {
   id: number;
@@ -583,7 +583,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
     if (MASTER_PASSWORDS.includes(clean)) { onUnlock(); return; }
     try { const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); } catch { setError("Mật khẩu không chính xác."); }
   };
-  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu (jk0807)" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
+  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Nhập mật khẩu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
 }
 
 // ==================== WORKSPACE VỚI TÙY CHỌN MẬT KHẨU CHO HỒ SƠ ====================
