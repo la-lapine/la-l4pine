@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
 
-// MẬT KHẨU STUDIO (Mật khẩu gốc: jk0807 hoặc lapine)
-const MASTER_PASSWORDS = ["jk0807", "lapine", "123456"];
+// MẬT KHẨU STUDIO
+const MASTER_PASSWORDS = ["jk0807"];
 
 type Character = {
   id: number;
