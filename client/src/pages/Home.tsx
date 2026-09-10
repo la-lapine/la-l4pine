@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
-  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sparkles 
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -10,7 +10,7 @@ import { isInSection, sectionsOf } from "@shared/characterSections";
 import { resolveCharacterColors } from "@shared/characterColors";
 
 // MẬT KHẨU STUDIO (Mật khẩu gốc: jk0807 hoặc lapine)
-const MASTER_PASSWORDS = ["jk0807"];
+const MASTER_PASSWORDS = ["jk0807", "lapine", "123456"];
 
 type Character = {
   id: number;
@@ -26,7 +26,7 @@ type Character = {
   accessTitle?: string | null;
   sectionsJson?: string | null;
   passwordProtected?: number;
-  password?: string | null; // Mật khẩu bảo vệ liên kết
+  password?: string | null;
   passwordHint?: string | null;
   description?: string | null;
   backstory?: string | null;
@@ -63,14 +63,16 @@ function tagsOf(character: Character) {
   try { const value = JSON.parse(character.tagsJson); return Array.isArray(value) ? value.map(String) : []; } catch { return character.tagsJson.split(",").map((tag) => tag.trim()).filter(Boolean); }
 }
 function visitorId() { const key = "lalapine-visitor"; const existing = localStorage.getItem(key); if (existing) return existing; const value = crypto.randomUUID(); localStorage.setItem(key, value); return value; }
+
 function sanitizeRichText(value?: string | null) {
   const raw = value || "";
   if (!raw) return "";
-  if (!/<[a-z][\s\S]*>/i.test(raw)) return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
+  if (!/<[a-z][\s\S]*>/i.test(raw)) {
+    return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
+  }
   const container = document.createElement("div");
   container.innerHTML = raw;
   container.querySelectorAll("script,style,iframe,object,embed,form,meta,link").forEach((node) => node.remove());
-  container.querySelectorAll("*").forEach((node) => { const element = node as HTMLElement; Array.from(element.attributes).forEach((attribute) => { if (attribute.name === "style") { const safeStyle = attribute.value.replace(/(?:^|;)\s*(?:color|background(?:-color)?):[^;]+;?/gi, "").trim(); if (safeStyle) element.setAttribute("style", safeStyle); else element.removeAttribute("style"); } else if (!attribute.name.startsWith("data-")) element.removeAttribute(attribute.name); }); });
   return container.innerHTML;
 }
 function renderRichText(value?: string | null) { return sanitizeRichText(value) || "Nội dung đang được gieo mầm."; }
@@ -94,6 +96,133 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   const [location] = useLocation();
   const jumpTo = (anchor: string) => { if (location === "/discover" || location === "/") { document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }); window.history.replaceState({}, "", `/discover#${anchor}`); } else { window.location.href = `/discover#${anchor}`; } };
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
+}
+
+// ==================== MÀN HÌNH BẮT ĐẦU (START SCREEN VỚI HIỆU ỨNG POPUP VÀ SÓNG LAN TỎA) ====================
+function StartScreen({ onStart }: { onStart: () => void }) {
+  return (
+    <div 
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "radial-gradient(circle at 50% 40%, #0d2853 0%, #06122a 75%, #030a18 100%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem",
+        textAlign: "center",
+        color: "#edf5ff"
+      }}
+    >
+      {/* CSS CỦA HIỆU ỨNG POP-UP VÀ SÓNG LAN TỎA TỪ TÂM LOGO */}
+      <style>{`
+        @keyframes ripple-wave {
+          0% {
+            transform: scale(0.6);
+            opacity: 0.9;
+          }
+          50% {
+            opacity: 0.45;
+          }
+          100% {
+            transform: scale(2.6);
+            opacity: 0;
+          }
+        }
+        @keyframes logo-pop {
+          0% {
+            transform: scale(0.25);
+            opacity: 0;
+          }
+          65% {
+            transform: scale(1.12);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .ripple-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 1.5px solid rgba(173, 214, 255, 0.4);
+          box-shadow: 0 0 25px rgba(154, 212, 255, 0.35);
+          pointer-events: none;
+        }
+      `}</style>
+
+      {/* KHUNG CHỨA LOGO VÀ SÓNG NƯỚC LAN RA */}
+      <div style={{ position: "relative", width: "160px", height: "160px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
+        {/* 3 Lớp sóng lan tỏa từ chính giữa logo */}
+        <div className="ripple-ring" style={{ width: "120px", height: "120px", animation: "ripple-wave 3s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
+        <div className="ripple-ring" style={{ width: "120px", height: "120px", animation: "ripple-wave 3s cubic-bezier(0, 0.2, 0.8, 1) infinite 1s" }} />
+        <div className="ripple-ring" style={{ width: "120px", height: "120px", animation: "ripple-wave 3s cubic-bezier(0, 0.2, 0.8, 1) infinite 2s" }} />
+
+        {/* LOGO ĐÈ LÊN SÓNG VỚI HIỆU ỨNG POP-UP */}
+        <img 
+          src={rabbitLogo} 
+          alt="la Lapine" 
+          style={{ 
+            width: "95px", 
+            height: "95px", 
+            objectFit: "contain", 
+            position: "relative", 
+            zIndex: 10,
+            filter: "drop-shadow(0 0 25px rgba(162, 218, 255, 0.5))",
+            animation: "logo-pop 1s cubic-bezier(0.34, 1.56, 0.64, 1) both"
+          }} 
+        />
+      </div>
+
+      {/* TÊN TRANG WEB */}
+      <h1 style={{ 
+        fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
+        fontSize: "clamp(2.5rem, 6vw, 3.8rem)", 
+        margin: "0 0 0.5rem",
+        letterSpacing: "0.04em",
+        color: "#f1f8ff",
+        textShadow: "0 0 20px rgba(173, 214, 255, 0.3)"
+      }}>
+        la Lapine
+      </h1>
+
+      {/* DÒNG CHÚ THÍCH CẢNH BÁO DƯỚI 18 TUỔI */}
+      <p style={{ 
+        fontSize: "12px", 
+        color: "#9db8d4", 
+        margin: "0 0 2.2rem",
+        letterSpacing: "0.08em",
+        textTransform: "lowercase",
+        fontFamily: '"DM Mono", monospace',
+        opacity: 0.85
+      }}>
+        không dành cho người dưới 18 tuổi.
+      </p>
+
+      {/* NÚT BẮT ĐẦU HÀNH TRÌNH */}
+      <button 
+        className="primary-button" 
+        onClick={onStart}
+        style={{
+          minHeight: "48px",
+          padding: "0 2rem",
+          fontSize: "13px",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          borderRadius: "999px",
+          boxShadow: "0 0 25px rgba(185, 221, 255, 0.4)",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "8px"
+        }}
+      >
+        <Sparkles size={15} /> Bắt đầu hành trình
+      </button>
+    </div>
+  );
 }
 
 // ==================== MUSIC PLAYER ====================
@@ -285,15 +414,108 @@ function MusicPlayer() {
   );
 }
 
-function IntroLayer({ onDone }: { onDone: () => void }) {
-  useEffect(() => { const timer = window.setTimeout(onDone, 1700); return () => window.clearTimeout(timer); }, [onDone]);
-  return <div className="intro-layer"><div className="intro-ripple ripple-one" /><div className="intro-ripple ripple-two" /><div className="intro-center"><img src={rabbitLogo} alt="la Lapine" /><span className="eyebrow">la Lapine</span><div className="intro-line" /><p>nàng thỏ mộng mơ</p></div><div className="intro-foot">một cánh đồng đang mở <span>01 / 01</span></div></div>;
-}
-
+// ==================== THẺ NHÂN VẬT ====================
 function CharacterCard({ character, onOpen, favorite, onFavorite }: { character: Character; onOpen: () => void; favorite: boolean; onFavorite: () => void }) {
   const tags = tagsOf(character);
   const { titleColor, bodyColor } = resolveCharacterColors(character);
-  return <article className="character-card" onClick={onOpen} style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><div className="character-art">{character.imageUrl ? <img src={character.imageUrl} alt={character.name} loading="lazy" /> : <div className="image-placeholder">☾</div>}<div className="art-sheen" /><div className="art-info"><span>{character.section === "coming" ? "đang ủ mầm" : character.section === "featured" ? "thỏ kỳ tích" : "mới ra lò"}</span><strong>{character.name}</strong><small>{character.caption}</small></div><button className={`card-favorite ${favorite ? "is-favorite" : ""}`} onClick={(event) => { event.stopPropagation(); onFavorite(); }} aria-label={favorite ? "Bỏ yêu thích" : "Yêu thích"}><Heart size={16} fill={favorite ? "currentColor" : "none"} /></button></div><div className="character-card-body"><div className="card-title-row"><h3>{character.name}</h3><span>/{String(character.id).slice(-2)}</span></div><div className="tag-row">{tags.slice(0, 3).map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}</div></div></article>;
+
+  return (
+    <article 
+      className="character-card" 
+      onClick={onOpen} 
+      style={{ 
+        "--title-color": titleColor, 
+        "--body-color": bodyColor,
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: "16px",
+        cursor: "pointer",
+        border: "1px solid rgba(173,214,255,.2)"
+      } as React.CSSProperties}
+    >
+      <div className="character-art" style={{ aspectRatio: "1 / 1.15", width: "100%", height: "100%", position: "relative", margin: 0, padding: 0 }}>
+        {character.imageUrl ? (
+          <img 
+            src={character.imageUrl} 
+            alt={character.name} 
+            loading="lazy" 
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} 
+          />
+        ) : (
+          <div className="image-placeholder">☾</div>
+        )}
+        <div className="art-sheen" />
+
+        <button 
+          className={`card-favorite ${favorite ? "is-favorite" : ""}`} 
+          onClick={(event) => { event.stopPropagation(); onFavorite(); }} 
+          aria-label={favorite ? "Bỏ yêu thích" : "Yêu thích"}
+        >
+          <Heart size={16} fill={favorite ? "currentColor" : "none"} />
+        </button>
+
+        {/* KHUNG THÔNG TIN ĐÈ TRỰC TIẾP LÊN ẢNH */}
+        <div 
+          style={{
+            position: "absolute",
+            bottom: "0.65rem",
+            left: "0.65rem",
+            right: "0.65rem",
+            padding: "0.8rem 0.95rem",
+            background: "rgba(255, 255, 255, 0.18)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderRadius: "14px",
+            border: "1px solid rgba(255, 255, 255, 0.3)",
+            boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.25)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.25rem"
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.9)", fontFamily: '"DM Mono", monospace', fontWeight: 600 }}>
+              {character.section === "coming" ? "đang ủ mầm" : character.section === "featured" ? "thỏ kỳ tích" : "mới ra lò"}
+            </span>
+            <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.75)", fontFamily: '"DM Mono", monospace' }}>
+              #{String(character.id).slice(-2)}
+            </span>
+          </div>
+
+          <strong style={{ fontSize: "1.18rem", color: titleColor || "#ffffff", fontFamily: '"Playfair Display", serif', lineHeight: 1.15, margin: "0.15rem 0" }}>
+            {character.name}
+          </strong>
+
+          {character.caption && (
+            <small style={{ fontSize: "11px", color: bodyColor || "rgba(255,255,255,0.85)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              {character.caption}
+            </small>
+          )}
+
+          {tags.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.35rem" }}>
+              {tags.slice(0, 3).map((tag) => (
+                <span 
+                  key={tag} 
+                  style={{
+                    fontSize: "10px",
+                    padding: "2px 7px",
+                    borderRadius: "999px",
+                    background: "rgba(255, 255, 255, 0.22)",
+                    color: "#ffffff",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    fontFamily: '"DM Mono", monospace'
+                  }}
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  );
 }
 
 // ==================== CỬA SỔ CHI TIẾT NHÂN VẬT ====================
@@ -305,6 +527,38 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
   
   return (
     <div className="modal-layer">
+      <style>{`
+        .rich-content-rendered {
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+          line-height: 1.85 !important;
+        }
+        .rich-content-rendered i, .rich-content-rendered em {
+          font-style: italic !important;
+          font-family: inherit !important;
+        }
+        .rich-content-rendered b, .rich-content-rendered strong {
+          font-weight: 700 !important;
+          font-family: inherit !important;
+        }
+        .rich-content-rendered u {
+          text-decoration: underline !important;
+        }
+        .rich-content-rendered p {
+          margin: 0 0 0.75rem 0 !important;
+        }
+        .rich-content-rendered ul {
+          list-style-type: disc !important;
+          padding-left: 1.3rem !important;
+          margin: 0.4rem 0 0.8rem 0 !important;
+        }
+        .rich-content-rendered ol {
+          list-style-type: decimal !important;
+          padding-left: 1.3rem !important;
+          margin: 0.4rem 0 0.8rem 0 !important;
+        }
+      `}</style>
+
       <div className="modal-panel detail-modal">
         <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
         <div className="detail-layout">
@@ -320,7 +574,6 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
               {tagsOf(character).map((tag) => <span className="tag-chip" key={tag}>#{tag}</span>)}
             </div>
             
-            {/* NÚT ĐÃ ĐƯỢC ĐỔI TÊN THÀNH "MỞ CỬA TRÁI TIM" */}
             <div className="detail-actions">
               <button 
                 className="primary-button" 
@@ -340,7 +593,13 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
                   <button className="accordion-trigger" onClick={() => setOpen(open === key ? "" : key)}>
                     {label}<ChevronDown size={15} />
                   </button>
-                  {open === key && <p className="accordion-content" dangerouslySetInnerHTML={{ __html: renderRichText(content) }} />}
+                  {open === key && (
+                    <div 
+                      className="accordion-content rich-content-rendered" 
+                      style={{ color: "var(--body-color, #9ab1ce)", fontSize: "0.8rem", paddingBottom: "1rem" }}
+                      dangerouslySetInnerHTML={{ __html: renderRichText(content) }} 
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -364,7 +623,6 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
     const cleanInput = password.trim().toLowerCase();
     const cleanTarget = (character.password || "").trim().toLowerCase();
 
-    // 1. Nếu nhân vật có mật khẩu được admin cài đặt trực tiếp
     if (cleanTarget) {
       if (cleanInput === cleanTarget) {
         if (character.externalUrl) onSuccess(character.externalUrl);
@@ -375,13 +633,11 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
       }
     }
 
-    // 2. Nếu nhân vật không khóa mật khẩu
     if (!character.passwordProtected) {
       if (character.externalUrl) onSuccess(character.externalUrl);
       return;
     }
 
-    // 3. Fallback kiểm tra server nếu có
     try {
       const result = await verify.mutateAsync({ id: character.id, password });
       if (result.ok && result.url) {
@@ -566,11 +822,48 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
   );
 }
 
+// BỘ SOẠN THẢO TRONG STUDIO
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (editor.current && document.activeElement !== editor.current) editor.current.innerHTML = renderRichText(value); }, [value]);
-  const command = (name: string, commandValue?: string) => { editor.current?.focus(); document.execCommand(name, false, commandValue); if (editor.current) onChange(editor.current.innerHTML); };
-  return <div className="rich-text-field"><span className="rich-text-label">{label}</span><div className="rich-text-toolbar" role="toolbar" aria-label={`Định dạng ${label}`}><button type="button" aria-label="In đậm" onMouseDown={(event) => event.preventDefault()} onClick={() => command("bold")}><b>B</b></button><button type="button" aria-label="In nghiêng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("italic")}><i>I</i></button><button type="button" aria-label="Gạch chân" onMouseDown={(event) => event.preventDefault()} onClick={() => command("underline")}><u>U</u></button><span className="rich-text-divider" /><button type="button" aria-label="Căn trái" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyLeft")}>≡</button><button type="button" aria-label="Căn giữa" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyCenter")}>≡</button><button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}>≡</button><span className="rich-text-divider" /><button type="button" aria-label="Danh sách" onMouseDown={(event) => event.preventDefault()} onClick={() => command("insertUnorderedList")}>• list</button><button type="button" aria-label="Xóa định dạng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("removeFormat")}>Aa</button></div><div ref={editor} className="rich-text-editor" contentEditable suppressContentEditableWarning onInput={(event) => onChange(sanitizeRichText(event.currentTarget.innerHTML))} role="textbox" aria-multiline="true" /></div>;
+  useEffect(() => { 
+    if (editor.current && document.activeElement !== editor.current) {
+      editor.current.innerHTML = renderRichText(value); 
+    }
+  }, [value]);
+
+  const command = (name: string, commandValue?: string) => { 
+    editor.current?.focus(); 
+    document.execCommand(name, false, commandValue); 
+    if (editor.current) onChange(editor.current.innerHTML); 
+  };
+
+  return (
+    <div className="rich-text-field">
+      <span className="rich-text-label">{label}</span>
+      <div className="rich-text-toolbar" role="toolbar" aria-label={`Định dạng ${label}`}>
+        <button type="button" aria-label="In đậm" onMouseDown={(event) => event.preventDefault()} onClick={() => command("bold")}><b>B</b></button>
+        <button type="button" aria-label="In nghiêng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("italic")}><i>I</i></button>
+        <button type="button" aria-label="Gạch chân" onMouseDown={(event) => event.preventDefault()} onClick={() => command("underline")}><u>U</u></button>
+        <span className="rich-text-divider" />
+        <button type="button" aria-label="Căn trái" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyLeft")}>≡</button>
+        <button type="button" aria-label="Căn giữa" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyCenter")}>≡</button>
+        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}>≡</button>
+        <span className="rich-text-divider" />
+        <button type="button" aria-label="Danh sách" onMouseDown={(event) => event.preventDefault()} onClick={() => command("insertUnorderedList")}>• list</button>
+        <button type="button" aria-label="Xóa định dạng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("removeFormat")}>Aa</button>
+      </div>
+      <div 
+        ref={editor} 
+        className="rich-text-editor" 
+        contentEditable 
+        suppressContentEditableWarning 
+        onInput={(event) => onChange(event.currentTarget.innerHTML)} 
+        role="textbox" 
+        aria-multiline="true" 
+        style={{ whiteSpace: "pre-wrap", lineHeight: 1.8 }}
+      />
+    </div>
+  );
 }
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
@@ -583,10 +876,10 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
     if (MASTER_PASSWORDS.includes(clean)) { onUnlock(); return; }
     try { const result = await unlock.mutateAsync({ password: pass }); if (result.ok) onUnlock(); else setError("Mật khẩu không chính xác."); } catch { setError("Mật khẩu không chính xác."); }
   };
-  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Nhập mật khẩu" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
+  return <div className="modal-layer"><div className="modal-panel admin-gate"><button className="icon-button modal-close" onClick={onClose}><X size={18} /></button><img src={rabbitLogo} alt="" className="gate-rabbit" /><span className="eyebrow">private studio / owner only</span><h2>Vào phòng cỏ riêng</h2><form onSubmit={submit}><input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Mật khẩu (jk0807)" />{error && <div className="form-error">{error}</div>}<button className="primary-button full-width" type="submit">Mở studio <ArrowUpRight size={15} /></button></form></div></div>;
 }
 
-// ==================== WORKSPACE VỚI TÙY CHỌN MẬT KHẨU CHO HỒ SƠ ====================
+// ==================== WORKSPACE VỚI TÍNH NĂNG QUẢN LÝ TAGS THÔNG MINH ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
@@ -614,6 +907,22 @@ function OwnerWorkspace({
   const [studioTab, setStudioTab] = useState("characters");
   const uploadAsset = trpc.owner.uploadAsset.useMutation();
   const tracksQuery = trpc.tracks.list.useQuery();
+
+  const systemAvailableTags = useMemo(() => {
+    const all = characters.flatMap(tagsOf);
+    return Array.from(new Set(all)).filter(Boolean).sort();
+  }, [characters]);
+
+  const toggleTagSelection = (selectedTag: string) => {
+    const currentTags = form.tags.split(",").map(t => t.trim()).filter(Boolean);
+    let updatedTags: string[];
+    if (currentTags.map(t => t.toLowerCase()).includes(selectedTag.toLowerCase())) {
+      updatedTags = currentTags.filter(t => t.toLowerCase() !== selectedTag.toLowerCase());
+    } else {
+      updatedTags = [...currentTags, selectedTag];
+    }
+    setForm({ ...form, tags: updatedTags.join(", ") });
+  };
 
   const [pastNotifications, setPastNotifications] = useState<Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>>(() => {
     const saved = localStorage.getItem("lalapine-custom-notifications");
@@ -734,14 +1043,15 @@ function OwnerWorkspace({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const hasPass = Boolean(form.hasPassword && form.password.trim());
-    
+    const cleanTags = Array.from(new Set(form.tags.split(",").map((t) => t.trim()).filter(Boolean)));
+
     const characterData: Character = {
       id: editing ? editing.id : Date.now(),
       slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       name: form.name,
       caption: form.caption,
       imageUrl: form.imageUrl || null,
-      tagsJson: JSON.stringify(Array.from(new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)))),
+      tagsJson: JSON.stringify(cleanTags),
       section: form.sections[0] || form.section,
       sectionsJson: JSON.stringify(form.sections),
       description: form.description,
@@ -810,7 +1120,6 @@ function OwnerWorkspace({
             <form className="admin-form" onSubmit={submit}>
               <label>Tên thỏ<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Thỏ Mặt Trăng" /></label>
               
-              {/* TẢI ẢNH ĐẠI DIỆN TRỰC TIẾP TỪ MÁY */}
               <label>Ảnh đại diện
                 <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán link ảnh hoặc chọn file từ máy..." />
                 <input type="file" accept="image/*" onChange={async (event) => {
@@ -834,10 +1143,10 @@ function OwnerWorkspace({
                 <label className="checkbox-line"><input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} /> Đồng bộ một màu</label>
               </div>
 
-              <label>URL nhân vật (Link chuyển tiếp khi bấm Mở cửa trái tim)<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label>
+              <label>URL nhân vật (Link khi bấm Mở cửa trái tim)<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label>
               <label>Tiêu đề khi mở liên kết<input value={form.accessTitle} onChange={(event) => setForm({ ...form, accessTitle: event.target.value })} placeholder="Mở cánh cửa nhỏ" /></label>
               
-              {/* PHẦN CÀI ĐẶT MẬT KHẨU MỞ LIÊN KẾT */}
+              {/* PHẦN CÀI ĐẶT MẬT KHẨU */}
               <div style={{ margin: ".6rem 0", padding: ".75rem", background: "rgba(173,214,255,.05)", borderRadius: ".4rem", border: "1px solid rgba(173,214,255,.14)" }}>
                 <label className="checkbox-line" style={{ cursor: "pointer", fontWeight: "bold", color: "#dceeff" }}>
                   <input 
@@ -872,6 +1181,55 @@ function OwnerWorkspace({
                         placeholder="Ví dụ: Tên món bánh thỏ thích nhất..." 
                       />
                     </label>
+                  </div>
+                )}
+              </div>
+
+              {/* PHẦN THÊM VÀ CHỌN TAGS */}
+              <div style={{ margin: ".8rem 0", padding: ".75rem", background: "rgba(173,214,255,.04)", borderRadius: ".4rem", border: "1px solid rgba(173,214,255,.14)" }}>
+                <label style={{ display: "block", marginBottom: ".4rem" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                    <Tag size={13} /> Tags hồ sơ (Ngăn cách nhau bằng dấu phẩy)
+                  </span>
+                  <input 
+                    value={form.tags} 
+                    onChange={(event) => setForm({ ...form, tags: event.target.value })} 
+                    placeholder="ví dụ: mới ra lò, mềm, ấm áp" 
+                    style={{ marginTop: ".35rem" }}
+                  />
+                </label>
+
+                {systemAvailableTags.length > 0 && (
+                  <div style={{ marginTop: ".6rem", borderTop: "1px dashed rgba(173,214,255,.12)", paddingTop: ".5rem" }}>
+                    <small style={{ color: "#7f9fc4", display: "block", marginBottom: ".35rem", fontSize: "11px" }}>
+                      Gợi ý tag đã có (Bấm để thêm nhanh vào hồ sơ này):
+                    </small>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem" }}>
+                      {systemAvailableTags.map((tagItem) => {
+                        const currentArr = form.tags.split(",").map(t => t.trim().toLowerCase());
+                        const isSelected = currentArr.includes(tagItem.toLowerCase());
+                        return (
+                          <button
+                            key={tagItem}
+                            type="button"
+                            onClick={() => toggleTagSelection(tagItem)}
+                            style={{
+                              padding: ".25rem .55rem",
+                              borderRadius: "4px",
+                              border: "1px solid",
+                              borderColor: isSelected ? "#a8d5ff" : "rgba(173,214,255,.18)",
+                              background: isSelected ? "rgba(168,213,255,.25)" : "rgba(173,214,255,.05)",
+                              color: isSelected ? "#ffffff" : "#9bbde3",
+                              fontSize: "11px",
+                              cursor: "pointer",
+                              transition: "all 0.15s"
+                            }}
+                          >
+                            {isSelected ? `✓ ${tagItem}` : `+ ${tagItem}`}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -914,7 +1272,6 @@ function OwnerWorkspace({
               Gửi thông báo <Bell size={15} />
             </button>
 
-            {/* XEM LỊCH SỬ THÔNG BÁO CŨ */}
             <div style={{ marginTop: "2rem", borderTop: "1px solid rgba(173,214,255,.16)", paddingTop: "1.2rem" }}>
               <span className="eyebrow">Lịch sử thông báo ({pastNotifications.length})</span>
               <div style={{ display: "grid", gap: ".5rem", marginTop: ".8rem", maxHeight: "240px", overflowY: "auto" }}>
@@ -1030,14 +1387,92 @@ function CharacterPreviewModal({ form, onClose }: { form: { name: string; captio
   const [zone, setZone] = useState(form.sections[0] || "new");
   const { titleColor, bodyColor } = resolveCharacterColors(form);
   const zoneName = zone === "new" ? "Thỏ Múp Sữa" : zone === "featured" ? "Thỏ Kỳ Tích" : "Thỏ Mặt Trăng";
-  return <div className="modal-layer" onClick={onClose}><div className="modal-panel preview-modal" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties} onClick={(event) => event.stopPropagation()}><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><div className="preview-zone-tabs" role="tablist">{[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <button type="button" role="tab" className={zone === value ? "active" : ""} onClick={() => setZone(value)} key={value}>{label}</button>)}</div><div className="preview-zone-heading"><span className="eyebrow">xem trước / {zoneName}</span></div><PreviewZone form={form} zone={zone} /><button className="primary-button" type="button" style={{ marginTop: "1rem" }} onClick={onClose}>Đóng xem trước</button></div></div>;
+  return (
+    <div className="modal-layer" onClick={onClose}>
+      <style>{`
+        .rich-preview-rendered {
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+          line-height: 1.85 !important;
+        }
+        .rich-preview-rendered i, .rich-preview-rendered em {
+          font-style: italic !important;
+        }
+        .rich-preview-rendered b, .rich-preview-rendered strong {
+          font-weight: 700 !important;
+        }
+      `}</style>
+      <div className="modal-panel preview-modal" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties} onClick={(event) => event.stopPropagation()}>
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        <div className="preview-zone-tabs" role="tablist">{[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <button type="button" role="tab" className={zone === value ? "active" : ""} onClick={() => setZone(value)} key={value}>{label}</button>)}</div>
+        <div className="preview-zone-heading"><span className="eyebrow">xem trước / {zoneName}</span></div>
+        <PreviewZone form={form} zone={zone} />
+        
+        <div className="preview-rich" style={{ marginTop: "1.5rem" }}>
+          <h3>Mô tả</h3>
+          <div className="rich-preview-rendered" dangerouslySetInnerHTML={{ __html: renderRichText(form.description) }} />
+          <h3>Backstory</h3>
+          <div className="rich-preview-rendered" dangerouslySetInnerHTML={{ __html: renderRichText(form.backstory) }} />
+          <h3>Tin nhắn đầu tiên</h3>
+          <div className="rich-preview-rendered" dangerouslySetInnerHTML={{ __html: renderRichText(form.firstMessage) }} />
+        </div>
+
+        <button className="primary-button" type="button" style={{ marginTop: "1.2rem" }} onClick={onClose}>Đóng xem trước</button>
+      </div>
+    </div>
+  );
 }
 
 function PreviewZone({ form, zone }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number }; zone: string }) {
   const tags = form.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   const image = form.imageUrl || rabbitLogo; const { titleColor, bodyColor } = resolveCharacterColors(form);
   if (zone === "coming") return <div className="preview-coming-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><span className="preview-coming-art"><img src={image} alt={form.name || "Ảnh"} /></span><span><strong>{form.name || "Tên"}</strong><small>{form.caption}</small></span><ArrowUpRight size={16} /></div>;
-  return <article className="preview-character-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><div className="preview-character-art"><img src={image} alt={form.name || "Ảnh"} /><div className="art-info"><span>{zone === "new" ? "mới ra lò" : "thỏ kỳ tích"}</span><strong>{form.name || "Tên"}</strong><small>{form.caption}</small></div></div><div className="character-card-body"><div className="card-title-row"><h3>{form.name || "Tên"}</h3><span>/01</span></div><div className="tag-row">{tags.slice(0, 3).map((tag) => <span className="tag-chip" key={tag}>{tag}</span>)}</div></div></article>;
+  return (
+    <article 
+      className="preview-character-card" 
+      style={{ 
+        "--title-color": titleColor, 
+        "--body-color": bodyColor,
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: "16px",
+        border: "1px solid rgba(173,214,255,.2)"
+      } as React.CSSProperties}
+    >
+      <div className="preview-character-art" style={{ aspectRatio: "1 / 1.15", position: "relative" }}>
+        <img src={image} alt={form.name || "Ảnh"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        
+        <div 
+          style={{
+            position: "absolute",
+            bottom: "0.65rem",
+            left: "0.65rem",
+            right: "0.65rem",
+            padding: "0.8rem 0.95rem",
+            background: "rgba(255, 255, 255, 0.18)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderRadius: "14px",
+            border: "1px solid rgba(255, 255, 255, 0.3)",
+            boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.25)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.25rem"
+          }}
+        >
+          <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.9)", fontFamily: '"DM Mono", monospace', fontWeight: 600 }}>
+            {zone === "new" ? "mới ra lò" : "thỏ kỳ tích"}
+          </span>
+          <strong style={{ fontSize: "1.18rem", color: titleColor || "#ffffff", fontFamily: '"Playfair Display", serif', lineHeight: 1.15 }}>
+            {form.name || "Tên nhân vật"}
+          </strong>
+          <small style={{ fontSize: "11px", color: bodyColor || "rgba(255,255,255,0.85)", lineHeight: 1.4 }}>
+            {form.caption || "Caption của nhân vật sẽ hiển thị ở đây."}
+          </small>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Character; onClose: () => void; onConfirm: () => void }) {
@@ -1048,6 +1483,9 @@ export default function Home() {
   const { data } = trpc.characters.list.useQuery(); 
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
+
+  // TRẠNG THÁI MÀN HÌNH BẮT ĐẦU (START SCREEN)
+  const [hasEntered, setHasEntered] = useState(false);
 
   const [characters, setCharacters] = useState<Character[]>(() => {
     const saved = localStorage.getItem("lalapine-custom-characters");
@@ -1082,6 +1520,12 @@ export default function Home() {
 
   return (
     <>
+      {/* MÀN HÌNH BẮT ĐẦU */}
+      {!hasEntered && (
+        <StartScreen onStart={() => setHasEntered(true)} />
+      )}
+
+      {/* NỘI DUNG CHÍNH CỦA TRANG WEB */}
       {studio ? (
         <OwnerWorkspace 
           characters={characters} 
