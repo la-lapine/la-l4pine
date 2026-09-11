@@ -43,6 +43,7 @@ type LoveSpark = { id: number; x: number; y: number; rotation: number; particles
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
 const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
 
+// Danh sách nhạc mặc định
 const defaultTracks = [
   { id: 101, title: "Lullaby of the Meadow", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
   { id: 102, title: "Moonlit Clover", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3" },
@@ -97,6 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
+// ==================== MÀN HÌNH BẮT ĐẦU (GỢN SÓNG SIÊU MỜ + POPUP CHẬM RÃI) ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -116,13 +118,6 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* KHẮC PHỤC LỖI VÒNG TRÒN THỪA CỦA CSS CŨ */
-        .intro-layer, .intro-ripple, .intro-center, .intro-foot {
-          display: none !important;
-          opacity: 0 !important;
-          animation: none !important;
-        }
-
         /* SÓNG LUÔN LẤY TÂM CHÍNH GIỮA MÀN HÌNH, LAN CỰC RỘNG VÀ CHẬM RÃI */
         @keyframes center-screen-wave {
           0% {
@@ -192,7 +187,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       <div className="screen-center-ripple" style={{ animation: "center-screen-wave 5.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
       <div className="screen-center-ripple" style={{ animation: "center-screen-wave 5.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.7s" }} />
 
-      {/* KHUNG CHỨA LOGO */}
+      {/* KHUNG CHỨA LOGO (KHOẢNG CÁCH GẦN HƠN VỚI TÊN PAGE) */}
       <div style={{ position: "relative", width: "130px", height: "130px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
         <img 
           src={rabbitLogo} 
@@ -254,6 +249,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
+// ==================== MUSIC PLAYER ====================
 function MusicPlayer() {
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -446,6 +442,7 @@ function MusicPlayer() {
   );
 }
 
+// ==================== THẺ NHÂN VẬT (KÍNH MỜ TRONG SUỐT BO TRÒN) ====================
 function CharacterCard({ character, onOpen, favorite, onFavorite }: { character: Character; onOpen: () => void; favorite: boolean; onFavorite: () => void }) {
   const tags = tagsOf(character);
   const { titleColor, bodyColor } = resolveCharacterColors(character);
@@ -548,6 +545,7 @@ function CharacterCard({ character, onOpen, favorite, onFavorite }: { character:
   );
 }
 
+// ==================== CỬA SỔ CHI TIẾT NHÂN VẬT ====================
 function DetailModal({ character, onClose, onFavorite, favorite }: { character: Character; onClose: () => void; onFavorite: () => void; favorite: boolean }) {
   const [open, setOpen] = useState("description");
   const [showAccess, setShowAccess] = useState(false);
@@ -640,6 +638,7 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
   );
 }
 
+// ==================== KHUNG MỞ KHÓA LIÊN KẾT CHO KHÁCH ====================
 function AccessModal({ character, onClose, onSuccess }: { character: Character; onClose: () => void; onSuccess: (url: string) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -702,6 +701,7 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   );
 }
 
+// ==================== HIỆU ỨNG QUAY SLOT CASINO CHO RANDOM ====================
 function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spinning, setSpinning] = useState(true);
@@ -975,6 +975,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   );
 }
 
+// ==================== HỘP THÔNG BÁO CHO NGƯỜI DÙNG ====================
 function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = notifications.find((item) => item.id === selectedId);
@@ -1079,6 +1080,7 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
   );
 }
 
+// BỘ SOẠN THẢO TRONG STUDIO
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   useEffect(() => { 
@@ -1163,6 +1165,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   );
 }
 
+// ==================== WORKSPACE ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
