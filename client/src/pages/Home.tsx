@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
-  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sparkles 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sun, Moon 
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU (LOGO XUẤT HIỆN TỪ TO THU NHỎ LẠI + SÓNG LAN RỘNG MỜ ẢO) ====================
+// ==================== MÀN HÌNH BẮT ĐẦU ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -118,21 +118,21 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* HIỆU ỨNG LOGO: TỪ GIỮA MÀN HÌNH TO RỒI THU NHỎ DẦN LẠI VÀ ĐÁP XUỐNG */
-        @keyframes logo-shrink-settle {
+        @keyframes logo-expand-and-shrink {
           0% {
-            transform: scale(2.6);
+            transform: scale(0.15);
             opacity: 0;
-            filter: blur(10px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
+            filter: blur(8px);
           }
-          45% {
-            opacity: 0.92;
-            filter: blur(2px) drop-shadow(0 0 28px rgba(162, 218, 255, 0.5));
-          }
-          75% {
-            transform: scale(0.95);
+          35% {
+            transform: scale(2.4);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.4));
+            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
+          }
+          55% {
+            transform: scale(2.4);
+            opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
           }
           100% {
             transform: scale(1);
@@ -141,26 +141,27 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           }
         }
 
-        /* GỢN SÓNG: LAN CỰC KỲ RỘNG, MỜ DỊU, KHÔNG CHÓI MẮT NHƯNG VẪN THẤY RÕ */
-        @keyframes wide-gentle-wave {
+        @keyframes fullscreen-wide-wave {
           0% {
-            transform: scale(0.5);
-            opacity: 0.45;
+            transform: scale(0.3);
+            opacity: 0;
           }
-          40% {
-            opacity: 0.22;
+          30% {
+            opacity: 0.4;
+          }
+          70% {
+            opacity: 0.15;
           }
           100% {
-            transform: scale(4.2);
+            transform: scale(6.5);
             opacity: 0;
           }
         }
 
-        /* CHỮ VÀ NÚT XUẤT HIỆN SAU KHI LOGO ĐÃ THU NHỎ XONG */
-        @keyframes intro-text-appear {
+        @keyframes fade-in-after-logo {
           0% {
             opacity: 0;
-            transform: translateY(14px);
+            transform: translateY(12px);
           }
           100% {
             opacity: 1;
@@ -168,23 +169,20 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           }
         }
 
-        .wide-wave-ring {
+        .fullscreen-ripple-ring {
           position: absolute;
           border-radius: 50%;
-          border: 1px solid rgba(173, 214, 255, 0.22);
-          background: radial-gradient(circle, rgba(173, 214, 255, 0.05) 0%, transparent 72%);
+          border: 1px solid rgba(173, 214, 255, 0.25);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.06) 0%, transparent 75%);
           filter: blur(2px);
           pointer-events: none;
         }
       `}</style>
 
-      {/* VÙNG LOGO VÀ SÓNG LAN TỎA */}
       <div style={{ position: "relative", width: "170px", height: "170px", display: "grid", placeItems: "center", marginBottom: "1.8rem" }}>
-        {/* 2 Vòng sóng lan cực rộng và mờ dịu */}
-        <div className="wide-wave-ring" style={{ width: "125px", height: "125px", animation: "wide-gentle-wave 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
-        <div className="wide-wave-ring" style={{ width: "125px", height: "125px", animation: "wide-gentle-wave 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.1s" }} />
+        <div className="fullscreen-ripple-ring" style={{ width: "130px", height: "130px", animation: "fullscreen-wide-wave 4.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 0.6s" }} />
+        <div className="fullscreen-ripple-ring" style={{ width: "130px", height: "130px", animation: "fullscreen-wide-wave 4.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.3s" }} />
 
-        {/* LOGO BẮT ĐẦU TỪ TO VÀ THU NHỎ LẠI VÀO TÂM */}
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
@@ -194,13 +192,12 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             objectFit: "contain", 
             position: "relative", 
             zIndex: 10,
-            animation: "logo-shrink-settle 1.8s cubic-bezier(0.16, 1, 0.3, 1) both"
+            animation: "logo-expand-and-shrink 2.6s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN TRANG WEB VÀ CẢNH BÁO TUỔI */}
-      <div style={{ animation: "intro-text-appear 1.6s ease-out 0.9s both" }}>
+      <div style={{ animation: "fade-in-after-logo 1.5s ease-out 2.2s both" }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.5rem, 6vw, 3.8rem)", 
@@ -229,19 +226,16 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           style={{
             minHeight: "48px",
-            padding: "0 2.2rem",
-            fontSize: "12.5px",
-            letterSpacing: "0.1em",
+            padding: "0 2.4rem",
+            fontSize: "13px",
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             borderRadius: "999px",
             boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
             cursor: "pointer"
           }}
         >
-          <Sparkles size={14} /> Bắt đầu hành trình
+          Bắt đầu hành trình
         </button>
       </div>
     </div>
@@ -350,11 +344,15 @@ function MusicPlayer() {
         style={{ 
           animation: "spin 5s linear infinite",
           cursor: "pointer",
-          flexShrink: 0
+          flexShrink: 0,
+          background: "radial-gradient(circle, #000000 0 10%, #d4a373 11% 24%, #121212 25% 28%, #1f1f1f 29% 45%, #0f0f0f 46% 48%, #1f1f1f 49% 68%, #0d0d0d 69% 72%, #1a1a1a 73% 100%)",
+          border: "1.5px solid rgba(212, 163, 115, 0.45)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.6), inset 0 0 10px rgba(0,0,0,0.8)",
+          color: "#faedcd"
         }}
         aria-label={expanded ? "Đóng cửa sổ nhạc" : "Mở cửa sổ nhạc"}
       >
-        <span>♪</span>
+        <span style={{ fontSize: "1rem", color: "#faedcd", opacity: 0.9 }}>♪</span>
       </button>
 
       {expanded && (
@@ -696,8 +694,82 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   );
 }
 
-function RandomModal({ character, onClose, onOpen }: { character: Character; onClose: () => void; onOpen: () => void }) {
-  return <div className="modal-layer"><div className="modal-panel random-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><img src={rabbitLogo} alt="" className="random-rabbit" /><span className="eyebrow">một chú thỏ được chọn</span><h2>{character.name}</h2><p>{character.caption}</p><button className="primary-button" onClick={onOpen}>Xem thông tin <ArrowUpRight size={15} /></button></div></div>;
+// ==================== HIỆU ỨNG QUAY SLOT CASINO CHO RANDOM ====================
+function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [spinning, setSpinning] = useState(true);
+  const winnerIndex = useRef(Math.floor(Math.random() * pool.length));
+
+  useEffect(() => {
+    let speed = 40;
+    let count = 0;
+    const totalSteps = 26 + Math.floor(Math.random() * 8);
+
+    const runSlot = () => {
+      count++;
+      setCurrentIndex((prev) => (prev + 1) % pool.length);
+      
+      if (count > totalSteps - 10) {
+        speed += 40;
+      }
+      if (count >= totalSteps) {
+        setSpinning(false);
+        setCurrentIndex(winnerIndex.current);
+      } else {
+        setTimeout(runSlot, speed);
+      }
+    };
+
+    const timer = setTimeout(runSlot, speed);
+    return () => clearTimeout(timer);
+  }, [pool]);
+
+  const active = pool[currentIndex] || pool[0];
+
+  return (
+    <div className="modal-layer">
+      <div className="modal-panel random-modal" style={{ width: "min(400px, 92vw)", textAlign: "center", padding: "1.8rem 1.4rem" }}>
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        
+        <span className="eyebrow" style={{ color: "#a8d5ff", letterSpacing: "0.15em" }}>
+          {spinning ? "✦ đang quay slot tìm bạn..." : "✦ một chú thỏ đã được chọn!"}
+        </span>
+
+        <div style={{ 
+          margin: "1.2rem auto",
+          padding: "1rem",
+          borderRadius: "16px",
+          background: "linear-gradient(180deg, rgba(8, 25, 52, 0.95), rgba(4, 15, 33, 0.95))",
+          border: spinning ? "1.5px solid #a8d5ff" : "1.5px solid #ffd166",
+          boxShadow: spinning ? "0 0 25px rgba(168, 213, 255, 0.3)" : "0 0 35px rgba(255, 209, 102, 0.45)",
+          transition: "all 0.3s ease"
+        }}>
+          <div style={{ width: "110px", height: "110px", margin: "0 auto 0.8rem", borderRadius: "12px", overflow: "hidden", background: "#0a2851" }}>
+            {active.imageUrl ? (
+              <img src={active.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: spinning ? "blur(1px)" : "none" }} />
+            ) : (
+              <div style={{ display: "grid", placeItems: "center", height: "100%", fontSize: "2rem", color: "#a8d5ff" }}>☾</div>
+            )}
+          </div>
+          <h2 style={{ fontSize: "1.5rem", margin: "0 0 0.3rem", color: "#f1f8ff", fontFamily: '"Playfair Display", serif' }}>
+            {active.name}
+          </h2>
+          <p style={{ fontSize: "11px", color: "#9db8d4", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {active.caption || "Một người bạn vừa tìm thấy đường về."}
+          </p>
+        </div>
+
+        <button 
+          className="primary-button" 
+          disabled={spinning}
+          onClick={() => onSelect(active)}
+          style={{ width: "100%", minHeight: "44px", marginTop: "0.5rem", opacity: spinning ? 0.6 : 1 }}
+        >
+          {spinning ? "Đang quay..." : "Xem thông tin chú thỏ"} <ArrowUpRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function PublicPage({ characters, onStudio }: { characters: Character[]; onStudio: () => void }) {
@@ -724,7 +796,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   const markNotificationRead = (id: string) => { if (readNotificationIds.includes(id)) return; const next = [...readNotificationIds, id]; setReadNotificationIds(next); localStorage.setItem("lalapine-read-notifications", JSON.stringify(next)); };
   const latest = useMemo(() => [...characters].filter((character) => isInSection(character, "new")).sort((a, b) => b.id - a.id)[0] || characters[0], [characters]);
   const [selected, setSelected] = useState<Character | null>(null);
-  const [random, setRandom] = useState<Character | null>(null);
+  const [showSlot, setShowSlot] = useState(false);
   const [favorites, setFavorites] = useState<number[]>(() => JSON.parse(localStorage.getItem("lalapine-favorites") || "[]"));
   const [loves, setLoves] = useState<LoveSpark[]>([]);
   const allTags = useMemo(() => Array.from(new Set(characters.flatMap(tagsOf))).sort((a, b) => a.localeCompare(b)), [characters]);
@@ -735,8 +807,167 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   const favoriteMutation = trpc.characters.favorite.useMutation();
   const toggleFavorite = (character: Character) => { const next = favorites.includes(character.id) ? favorites.filter((id) => id !== character.id) : [...favorites, character.id]; setFavorites(next); localStorage.setItem("lalapine-favorites", JSON.stringify(next)); favoriteMutation.mutate({ characterId: character.id, visitorId: visitorId() }); };
   useEffect(() => { const onPointerDown = (event: PointerEvent) => { const spark = createLoveSpark(event.clientX, event.clientY); setLoves((current) => [...current.slice(-7), spark]); window.setTimeout(() => setLoves((current) => current.filter((item) => item.id !== spark.id)), 900); }; window.addEventListener("pointerdown", onPointerDown); return () => window.removeEventListener("pointerdown", onPointerDown); }, []);
-  const goRandom = () => { const pool = visible.length ? visible : characters; setRandom(pool[Math.floor(Math.random() * pool.length)]); };
-  return <><div className="archive-shell"><SparklesLayer /><LoveLayer loveSparks={loves} /><Header onStudio={onStudio} onNotifications={() => setShowNotifications(true)} notificationCount={unreadCount} /><main className="public-content">{location !== "/archive" && location !== "/meadow" && <section className="hero-section"><div className="hero-copy"><span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span><h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1><div className="hero-meta"><div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div><div><strong>∞</strong><span>giấc mơ</span></div></div></div><div className="hero-art-wrap"><div className="hero-orbit orbit-one" /><div className="hero-orbit orbit-two" /><div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>{latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}<div className="hero-art-label"><span>mới ra gần đây / field 01</span><strong>{latest?.name || "Một chú thỏ mới"}</strong><small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small></div></div></div></section>}{location === "/meadow" && <section className="field-header"><span className="eyebrow">{location === "/meadow" ? "coming to the field" : "the living rabbit field"}</span><h1>{location === "/meadow" ? <>Những chú thỏ<br /><i>đang ủ mầm.</i></> : <>Hôm nay bạn muốn<br /><i>gặp thỏ nào?</i></>}</h1><p>{location === "/meadow" ? "Một vài cái tên đang ngủ dưới lớp cỏ. Chúng sẽ tỉnh dậy khi đến mùa." : "Tìm theo tên, cảm giác hoặc bước vào đồng cỏ bằng một lựa chọn bất ngờ."}</p></section>}{location !== "/meadow" && <section className="search-section" id="archive"><div className="search-intro"><span className="eyebrow"></span><h2>⟡ thỏ nhỏ đang tìm ai?</h2></div><div className="search-tools"><label className="search-box"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên, cảm giác, câu chuyện…" /><span>{visible.length} kết quả</span></label><div className="tag-filter"><div className="tag-filter-heading"><span className="filter-label">tags</span><button className="tag-toggle" aria-label={tagsExpanded ? "Thu gọn tags" : "Mở rộng tags"} onClick={() => setTagsExpanded(!tagsExpanded)}>{tagsExpanded ? "⌃" : "⌄"}</button></div><div className={`tag-scroll ${tagsExpanded ? "expanded" : ""}`}><button className={!tag ? "active" : ""} onClick={() => setTag(null)}>tất cả</button>{allTags.slice(0, tagsExpanded ? allTags.length : 6).map((item) => <button className={tag === item ? "active" : ""} onClick={() => setTag(item)} key={item}>{item}</button>)}</div></div><button className="random-button main-random" onClick={goRandom}><span>𐔌՞. .՞𐦯 hôm nay thỏ nhỏ sẽ gặp được ai đây .ᐣ.ᐟ</span><ArrowUpRight size={16} /></button></div></section>}{location !== "/meadow" && <section className="archive-section"><div className="archive-rule"><span>01</span><div /><span></span></div><div className="section-block" id="new"><SectionLabel eyebrow="freshly baked" title="Thỏ Múp Sữa" count={newer.length} /><div className="card-grid">{newer.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div><div className="section-block miracle-block" id="featured"><SectionLabel eyebrow="alphabetical miracles" title="Thỏ Kỳ Tích" count={miracles.length} /><div className="card-grid">{miracles.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}{location === "/meadow" && <section className="archive-section coming-only" id="coming"><div className="archive-rule"><span>03</span><div /><span>not yet, but soon</span></div><div className="section-block"><SectionLabel eyebrow="coming soon" title="Thỏ Mặt Trăng" count={coming.length} /><div className="coming-field">{coming.map((character) => <button className="coming-card" key={character.id} onClick={() => setSelected(character)}><span className="coming-art">{character.imageUrl && <img src={character.imageUrl} alt="" />}</span><span><strong>{character.name}</strong><small>{character.caption}</small></span><ArrowUpRight size={16} /></button>)}</div></div></section>}{location === "/archive" && <section className="archive-section"><div className="archive-rule"><span>02</span><div /><span>alphabetical meadow</span></div><div className="section-block"><SectionLabel eyebrow="the complete field" title="Tất cả những chú thỏ" count={visible.length} /><div className="card-grid full-field">{visible.map((character) => <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />)}</div></div></section>}<footer className="site-footer"><div><strong>la Lapine</strong><span>nàng thỏ mộng mơ</span></div></footer></main><MusicPlayer />{selected && <DetailModal character={selected} onClose={() => setSelected(null)} favorite={favorites.includes(selected.id)} onFavorite={() => toggleFavorite(selected)} />}{random && <RandomModal character={random} onClose={() => setRandom(null)} onOpen={() => { setSelected(random); setRandom(null); }} />}</div>{showNotifications && <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />}</>;
+
+  return (
+    <>
+      <div className="archive-shell">
+        <SparklesLayer />
+        <LoveLayer loveSparks={loves} />
+        <Header onStudio={onStudio} onNotifications={() => setShowNotifications(true)} notificationCount={unreadCount} />
+        
+        <main className="public-content">
+          {location !== "/archive" && location !== "/meadow" && (
+            <section className="hero-section">
+              <div className="hero-copy">
+                <span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span>
+                <h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1>
+                <div className="hero-meta">
+                  <div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div>
+                  <div><strong>∞</strong><span>giấc mơ</span></div>
+                </div>
+              </div>
+              <div className="hero-art-wrap">
+                <div className="hero-orbit orbit-one" />
+                <div className="hero-orbit orbit-two" />
+                <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
+                  {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
+                  <div className="hero-art-label">
+                    <span>mới ra gần đây / field 01</span>
+                    <strong>{latest?.name || "Một chú thỏ mới"}</strong>
+                    <small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {location === "/meadow" && (
+            <section className="field-header">
+              <span className="eyebrow">coming to the field</span>
+              <h1>Những chú thỏ<br /><i>đang ủ mầm.</i></h1>
+              <p>Một vài cái tên đang ngủ dưới lớp cỏ. Chúng sẽ tỉnh dậy khi đến mùa.</p>
+            </section>
+          )}
+
+          {location !== "/meadow" && (
+            <section className="search-section" id="archive">
+              <div className="search-intro">
+                <span className="eyebrow"></span>
+                <h2>⟡ thỏ nhỏ đang tìm ai?</h2>
+              </div>
+              <div className="search-tools">
+                <label className="search-box">
+                  <Search size={17} />
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm theo tên, cảm giác, câu chuyện…" />
+                  <span>{visible.length} kết quả</span>
+                </label>
+                <div className="tag-filter">
+                  <div className="tag-filter-heading">
+                    <span className="filter-label">tags</span>
+                    <button className="tag-toggle" aria-label={tagsExpanded ? "Thu gọn tags" : "Mở rộng tags"} onClick={() => setTagsExpanded(!tagsExpanded)}>
+                      {tagsExpanded ? "⌃" : "⌄"}
+                    </button>
+                  </div>
+                  <div className={`tag-scroll ${tagsExpanded ? "expanded" : ""}`}>
+                    <button className={!tag ? "active" : ""} onClick={() => setTag(null)}>tất cả</button>
+                    {allTags.slice(0, tagsExpanded ? allTags.length : 6).map((item) => (
+                      <button className={tag === item ? "active" : ""} onClick={() => setTag(item)} key={item}>{item}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <button className="random-button main-random" onClick={() => setShowSlot(true)}>
+                  <span>𐔌՞. .՞𐦯 hôm nay thỏ nhỏ sẽ gặp được ai đây .ᐣ.ᐟ</span>
+                  <ArrowUpRight size={16} />
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* TRANG CHỦ: ĐÃ XÓA SỐ 01 Ở ĐƯỜNG PHÂN CÁCH */}
+          {location !== "/meadow" && (
+            <section className="archive-section">
+              <div className="archive-rule"><div style={{ gridColumn: "1 / -1" }} /></div>
+              <div className="section-block" id="new">
+                <SectionLabel eyebrow="freshly baked" title="Thỏ Múp Sữa" count={newer.length} />
+                <div className="card-grid">
+                  {newer.map((character) => (
+                    <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />
+                  ))}
+                </div>
+              </div>
+              <div className="section-block miracle-block" id="featured">
+                <SectionLabel eyebrow="alphabetical miracles" title="Thỏ Kỳ Tích" count={miracles.length} />
+                <div className="card-grid">
+                  {miracles.map((character) => (
+                    <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* TRANG THỎ CHƯA RA: ĐÃ XÓA SỐ 03 VÀ DÒNG "NOT YET BUT SOON" */}
+          {location === "/meadow" && (
+            <section className="archive-section coming-only" id="coming">
+              <div className="archive-rule"><div style={{ gridColumn: "1 / -1" }} /></div>
+              <div className="section-block">
+                <SectionLabel eyebrow="coming soon" title="Thỏ Mặt Trăng" count={coming.length} />
+                <div className="coming-field">
+                  {coming.map((character) => (
+                    <button className="coming-card" key={character.id} onClick={() => setSelected(character)}>
+                      <span className="coming-art">{character.imageUrl && <img src={character.imageUrl} alt="" />}</span>
+                      <span><strong>{character.name}</strong><small>{character.caption}</small></span>
+                      <ArrowUpRight size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {location === "/archive" && (
+            <section className="archive-section">
+              <div className="archive-rule"><div style={{ gridColumn: "1 / -1" }} /></div>
+              <div className="section-block">
+                <SectionLabel eyebrow="the complete field" title="Tất cả những chú thỏ" count={visible.length} />
+                <div className="card-grid full-field">
+                  {visible.map((character) => (
+                    <CharacterCard key={character.id} character={character} onOpen={() => setSelected(character)} favorite={favorites.includes(character.id)} onFavorite={() => toggleFavorite(character)} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <footer className="site-footer">
+            <div><strong>la Lapine</strong><span>nàng thỏ mộng mơ</span></div>
+          </footer>
+        </main>
+
+        <MusicPlayer />
+        
+        {selected && (
+          <DetailModal character={selected} onClose={() => setSelected(null)} favorite={favorites.includes(selected.id)} onFavorite={() => toggleFavorite(selected)} />
+        )}
+
+        {showSlot && (
+          <SlotRandomModal 
+            pool={visible.length ? visible : characters} 
+            onSelect={(c) => { 
+              setShowSlot(false); 
+              setSelected(c); 
+            }} 
+            onClose={() => setShowSlot(false)} 
+          />
+        )}
+      </div>
+
+      {showNotifications && (
+        <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />
+      )}
+    </>
+  );
 }
 
 // ==================== HỘP THÔNG BÁO CHO NGƯỜI DÙNG ====================
@@ -844,6 +1075,7 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
   );
 }
 
+// BỘ SOẠN THẢO TRONG STUDIO
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   useEffect(() => { 
@@ -889,6 +1121,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
+// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -928,7 +1161,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   );
 }
 
-// ==================== WORKSPACE ====================
+// ==================== WORKSPACE STUDIO: TỐI ƯU HÓA GIAO DIỆN & CÓ NÚT CHỈNH THEME SÁNG TỐI ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
@@ -938,6 +1171,29 @@ function OwnerWorkspace({
   onClose: () => void; 
   onSaveCharacters: (newChars: Character[]) => void;
 }) {
+  // THEME STUDIO: SÁNG HOẶC TỐI (LƯU VÀO LOCALSTORAGE)
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    return localStorage.getItem("lalapine-studio-theme") !== "light";
+  });
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem("lalapine-studio-theme", next ? "dark" : "light");
+  };
+
+  // MÀU SẮC CHỦ ĐẠO CHO 2 THEME
+  const theme = {
+    bg: isDark ? "#061329" : "#f4f8fc",
+    sidebarBg: isDark ? "#081b38" : "#e8f2fa",
+    cardBg: isDark ? "rgba(11, 31, 61, 0.85)" : "#ffffff",
+    cardBorder: isDark ? "rgba(173, 214, 255, 0.16)" : "#d6e4f0",
+    textMain: isDark ? "#edf5ff" : "#1c2e44",
+    textMuted: isDark ? "#8ea8c7" : "#617996",
+    inputBg: isDark ? "rgba(5, 18, 41, 0.6)" : "#f8fbfe",
+    inputBorder: isDark ? "rgba(173, 214, 255, 0.2)" : "#d2e0ed",
+  };
+
   const blank = { 
     name: "", slug: "", caption: "", imageUrl: "", titleColor: "#eff8ff", bodyColor: "#9db8d4", colorSync: 1, 
     tags: "", section: "new", sections: ["new"], accessTitle: "", description: "", backstory: "", 
@@ -1140,37 +1396,79 @@ function OwnerWorkspace({
   };
   
   return (
-    <div className="workspace-layer">
-      <aside className="workspace-sidebar">
-        <div className="workspace-brand"><img src={rabbitLogo} alt="" /><div><strong>la Lapine</strong><span>private studio</span></div></div>
+    <div className="workspace-layer" style={{ background: theme.bg, color: theme.textMain, transition: "background 0.3s ease" }}>
+      {/* CỘT ĐIỀU HƯỚNG BÊN TRÁI */}
+      <aside className="workspace-sidebar" style={{ background: theme.sidebarBg, borderRight: `1px solid ${theme.cardBorder}` }}>
+        <div className="workspace-brand">
+          <img src={rabbitLogo} alt="" />
+          <div>
+            <strong style={{ color: theme.textMain }}>la Lapine</strong>
+            <span style={{ color: theme.textMuted }}>private studio</span>
+          </div>
+        </div>
+
         <nav>
           <button className={studioTab === "characters" ? "active" : ""} onClick={() => setStudioTab("characters")}>Hồ sơ thỏ</button>
           <button className={studioTab === "tags" ? "active" : ""} onClick={() => setStudioTab("tags")}>Tags đồng cỏ</button>
           <button className={studioTab === "playlist" ? "active" : ""} onClick={() => setStudioTab("playlist")}>Playlist</button>
           <button className={studioTab === "settings" ? "active" : ""} onClick={() => setStudioTab("settings")}>Thông báo</button>
         </nav>
-        <div className="workspace-user">
-          <strong>Chủ sở hữu</strong>
-          <span>Đã cấp toàn quyền</span>
+
+        {/* NÚT CHUYỂN ĐỔI THEME SÁNG / TỐI */}
+        <div style={{ marginTop: "auto", padding: "1rem 0.4rem" }}>
+          <button 
+            type="button" 
+            onClick={toggleTheme}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              padding: "0.55rem 0.8rem",
+              borderRadius: "8px",
+              border: `1px solid ${theme.cardBorder}`,
+              background: isDark ? "rgba(255,255,255,0.06)" : "#ffffff",
+              color: theme.textMain,
+              fontSize: "11.5px",
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            {isDark ? <Sun size={14} style={{ color: "#ffd166" }} /> : <Moon size={14} style={{ color: "#3a86ff" }} />}
+            <span>{isDark ? "Giao diện Sáng" : "Giao diện Tối"}</span>
+          </button>
+          <div style={{ marginTop: "0.6rem", textAlign: "center" }}>
+            <span style={{ color: theme.textMuted, fontSize: "11px" }}>Quyền: Chủ sở hữu</span>
+          </div>
         </div>
       </aside>
 
+      {/* VÙNG NỘI DUNG CHÍNH */}
       <main className="workspace-main">
         <header className="workspace-top">
-          <div><span className="eyebrow">rabbit field management</span><h1>Studio của nàng thỏ</h1></div>
-          <button className="secondary-button" onClick={onClose}>Rời studio</button>
+          <div>
+            <span className="eyebrow" style={{ color: theme.textMuted }}>rabbit field management</span>
+            <h1 style={{ color: theme.textMain }}>Studio của nàng thỏ</h1>
+          </div>
+          <button className="secondary-button" onClick={onClose} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>
+            Rời studio
+          </button>
         </header>
 
         <div className={`workspace-grid studio-tab-${studioTab}`}>
           {/* TAB HỒ SƠ THỎ */}
-          <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`}>
-            <span className="eyebrow">{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
-            <h2>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
+          <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
+            <span className="eyebrow" style={{ color: theme.textMuted }}>{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
+            <h2 style={{ color: theme.textMain }}>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
+            
             <form className="admin-form" onSubmit={submit}>
-              <label>Tên thỏ<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Thỏ Mặt Trăng" /></label>
+              <label style={{ color: theme.textMuted }}>Tên thỏ
+                <input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Thỏ Mặt Trăng" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+              </label>
               
-              <label>Ảnh đại diện
-                <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán link ảnh hoặc chọn file từ máy..." />
+              <label style={{ color: theme.textMuted }}>Ảnh đại diện
+                <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán link ảnh hoặc chọn file từ máy..." style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
                 <input type="file" accept="image/*" onChange={async (event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
@@ -1184,20 +1482,33 @@ function OwnerWorkspace({
                 }} />
               </label>
 
-              <label>Caption ngắn<input value={form.caption} onChange={(event) => setForm({ ...form, caption: event.target.value })} placeholder="Một câu để nhớ" /></label>
+              <label style={{ color: theme.textMuted }}>Caption ngắn
+                <input value={form.caption} onChange={(event) => setForm({ ...form, caption: event.target.value })} placeholder="Một câu để nhớ" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+              </label>
               
-              <div className="color-controls">
-                <label>Màu tiêu đề<input type="color" value={form.titleColor} onChange={(event) => setForm({ ...form, titleColor: event.target.value })} /></label>
-                <label>Màu nội dung<input type="color" value={form.bodyColor} disabled={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, bodyColor: event.target.value })} /></label>
-                <label className="checkbox-line"><input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} /> Đồng bộ một màu</label>
+              <div className="color-controls" style={{ background: theme.inputBg, borderColor: theme.inputBorder }}>
+                <label style={{ color: theme.textMuted }}>Màu tiêu đề
+                  <input type="color" value={form.titleColor} onChange={(event) => setForm({ ...form, titleColor: event.target.value })} />
+                </label>
+                <label style={{ color: theme.textMuted }}>Màu nội dung
+                  <input type="color" value={form.bodyColor} disabled={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, bodyColor: event.target.value })} />
+                </label>
+                <label className="checkbox-line" style={{ color: theme.textMuted }}>
+                  <input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} /> Đồng bộ một màu
+                </label>
               </div>
 
-              <label>URL nhân vật (Link khi bấm Mở cửa trái tim)<input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" /></label>
-              <label>Tiêu đề khi mở liên kết<input value={form.accessTitle} onChange={(event) => setForm({ ...form, accessTitle: event.target.value })} placeholder="Mở cánh cửa nhỏ" /></label>
+              <label style={{ color: theme.textMuted }}>URL nhân vật (Link khi bấm Mở cửa trái tim)
+                <input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+              </label>
               
-              {/* PHẦN CÀI ĐẶT MẬT KHẨU */}
-              <div style={{ margin: ".6rem 0", padding: ".75rem", background: "rgba(173,214,255,.05)", borderRadius: ".4rem", border: "1px solid rgba(173,214,255,.14)" }}>
-                <label className="checkbox-line" style={{ cursor: "pointer", fontWeight: "bold", color: "#dceeff" }}>
+              <label style={{ color: theme.textMuted }}>Tiêu đề khi mở liên kết
+                <input value={form.accessTitle} onChange={(event) => setForm({ ...form, accessTitle: event.target.value })} placeholder="Mở cánh cửa nhỏ" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+              </label>
+              
+              {/* KHÓA BẢO MẬT LIÊN KẾT */}
+              <div style={{ margin: ".6rem 0", padding: ".75rem", background: theme.inputBg, borderRadius: "8px", border: `1px solid ${theme.inputBorder}` }}>
+                <label className="checkbox-line" style={{ cursor: "pointer", fontWeight: "bold", color: theme.textMain }}>
                   <input 
                     type="checkbox" 
                     checked={form.hasPassword} 
@@ -1211,8 +1522,8 @@ function OwnerWorkspace({
                 </label>
 
                 {form.hasPassword && (
-                  <div style={{ marginTop: ".8rem", display: "grid", gap: ".6rem", borderTop: "1px dashed rgba(173,214,255,.15)", paddingTop: ".8rem" }}>
-                    <label>
+                  <div style={{ marginTop: ".8rem", display: "grid", gap: ".6rem", borderTop: `1px dashed ${theme.inputBorder}`, paddingTop: ".8rem" }}>
+                    <label style={{ color: theme.textMuted }}>
                       Mật khẩu mở khóa 
                       {editing && form.password && <small style={{ color: "#a8d5ff", marginLeft: "6px" }}>(Hiện tại: <b>{form.password}</b>)</small>}
                       <input 
@@ -1220,23 +1531,25 @@ function OwnerWorkspace({
                         value={form.password} 
                         onChange={(event) => setForm({ ...form, password: event.target.value })} 
                         placeholder="Nhập mật khẩu (ví dụ: mup-sua-123)" 
+                        style={{ background: theme.cardBg, borderColor: theme.inputBorder, color: theme.textMain }}
                       />
                     </label>
-                    <label>
+                    <label style={{ color: theme.textMuted }}>
                       Gợi ý mật khẩu cho khách
                       <input 
                         value={form.passwordHint} 
                         onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} 
                         placeholder="Ví dụ: Tên món bánh thỏ thích nhất..." 
+                        style={{ background: theme.cardBg, borderColor: theme.inputBorder, color: theme.textMain }}
                       />
                     </label>
                   </div>
                 )}
               </div>
 
-              {/* PHẦN THÊM VÀ CHỌN TAGS */}
-              <div style={{ margin: ".8rem 0", padding: ".75rem", background: "rgba(173,214,255,.04)", borderRadius: ".4rem", border: "1px solid rgba(173,214,255,.14)" }}>
-                <label style={{ display: "block", marginBottom: ".4rem" }}>
+              {/* THÊM VÀ CHỌN TAGS */}
+              <div style={{ margin: ".8rem 0", padding: ".75rem", background: theme.inputBg, borderRadius: "8px", border: `1px solid ${theme.inputBorder}` }}>
+                <label style={{ display: "block", marginBottom: ".4rem", color: theme.textMuted }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
                     <Tag size={13} /> Tags hồ sơ (Ngăn cách nhau bằng dấu phẩy)
                   </span>
@@ -1244,14 +1557,14 @@ function OwnerWorkspace({
                     value={form.tags} 
                     onChange={(event) => setForm({ ...form, tags: event.target.value })} 
                     placeholder="ví dụ: mới ra lò, mềm, ấm áp" 
-                    style={{ marginTop: ".35rem" }}
+                    style={{ marginTop: ".35rem", background: theme.cardBg, borderColor: theme.inputBorder, color: theme.textMain }}
                   />
                 </label>
 
                 {systemAvailableTags.length > 0 && (
-                  <div style={{ marginTop: ".6rem", borderTop: "1px dashed rgba(173,214,255,.12)", paddingTop: ".5rem" }}>
-                    <small style={{ color: "#7f9fc4", display: "block", marginBottom: ".35rem", fontSize: "11px" }}>
-                      Gợi ý tag đã có (Bấm để thêm nhanh vào hồ sơ này):
+                  <div style={{ marginTop: ".6rem", borderTop: `1px dashed ${theme.inputBorder}`, paddingTop: ".5rem" }}>
+                    <small style={{ color: theme.textMuted, display: "block", marginBottom: ".35rem", fontSize: "11px" }}>
+                      Gợi ý tag đã có (Bấm để chọn nhanh):
                     </small>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem" }}>
                       {systemAvailableTags.map((tagItem) => {
@@ -1266,12 +1579,11 @@ function OwnerWorkspace({
                               padding: ".25rem .55rem",
                               borderRadius: "4px",
                               border: "1px solid",
-                              borderColor: isSelected ? "#a8d5ff" : "rgba(173,214,255,.18)",
-                              background: isSelected ? "rgba(168,213,255,.25)" : "rgba(173,214,255,.05)",
-                              color: isSelected ? "#ffffff" : "#9bbde3",
+                              borderColor: isSelected ? "#a8d5ff" : theme.inputBorder,
+                              background: isSelected ? "rgba(168,213,255,.25)" : (isDark ? "rgba(255,255,255,.05)" : "#ffffff"),
+                              color: isSelected ? (isDark ? "#ffffff" : "#0c2c59") : theme.textMuted,
                               fontSize: "11px",
-                              cursor: "pointer",
-                              transition: "all 0.15s"
+                              cursor: "pointer"
                             }}
                           >
                             {isSelected ? `✓ ${tagItem}` : `+ ${tagItem}`}
@@ -1283,9 +1595,13 @@ function OwnerWorkspace({
                 )}
               </div>
 
-              <fieldset className="section-picker">
-                <legend>Khu vực hiển thị</legend>
-                {[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <label className="checkbox-line" key={value}><input type="checkbox" checked={form.sections.includes(value)} onChange={(event) => { const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value); setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value }); }} /> {label}</label>)}
+              <fieldset className="section-picker" style={{ background: theme.inputBg, borderColor: theme.inputBorder }}>
+                <legend style={{ color: theme.textMuted }}>Khu vực hiển thị</legend>
+                {[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => (
+                  <label className="checkbox-line" key={value} style={{ color: theme.textMain }}>
+                    <input type="checkbox" checked={form.sections.includes(value)} onChange={(event) => { const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value); setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value }); }} /> {label}
+                  </label>
+                ))}
               </fieldset>
 
               <div className="admin-two-col">
@@ -1294,24 +1610,28 @@ function OwnerWorkspace({
               </div>
               <RichTextField label="Tin nhắn đầu tiên" value={form.firstMessage} onChange={(value) => setForm({ ...form, firstMessage: value })} />
               
-              <div className="editor-actions">
-                <button type="button" className="secondary-button" onClick={() => setPreviewing(true)}>Xem trước</button>
+              <div className="editor-actions" style={{ marginTop: "1.2rem" }}>
+                <button type="button" className="secondary-button" onClick={() => setPreviewing(true)} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>Xem trước</button>
                 <button className="primary-button" type="submit">
                   {editing ? "Lưu thay đổi" : "Lưu vào đồng cỏ"} <ArrowUpRight size={15} />
                 </button>
-                {editing && <button type="button" className="secondary-button" onClick={reset}>Huỷ sửa</button>}
+                {editing && <button type="button" className="secondary-button" onClick={reset} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>Huỷ sửa</button>}
               </div>
             </form>
           </section>
 
           {/* TAB THÔNG BÁO CHO ADMIN */}
-          <section className={`notification-card studio-pane ${studioTab === "settings" ? "is-active" : "is-hidden"}`}>
-            <span className="eyebrow">broadcast / all visitors</span>
-            <h3>Gửi thông báo mới</h3>
-            <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề thông báo" />
-            <textarea rows={5} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Viết lời nhắn mà mọi người trong đồng cỏ sẽ thấy…" />
-            <label>Ngày giờ xuất bản<input type="datetime-local" value={noticePublishedAt} onChange={(event) => setNoticePublishedAt(event.target.value)} /></label>
-            <label className="checkbox-line"><input type="checkbox" checked={noticePinned} onChange={(event) => setNoticePinned(event.target.checked)} /> Ghim thông báo</label>
+          <section className={`notification-card studio-pane ${studioTab === "settings" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
+            <span className="eyebrow" style={{ color: theme.textMuted }}>broadcast / all visitors</span>
+            <h3 style={{ color: theme.textMain }}>Gửi thông báo mới</h3>
+            <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề thông báo" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+            <textarea rows={5} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Viết lời nhắn mà mọi người trong đồng cỏ sẽ thấy…" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+            <label style={{ color: theme.textMuted }}>Ngày giờ xuất bản
+              <input type="datetime-local" value={noticePublishedAt} onChange={(event) => setNoticePublishedAt(event.target.value)} style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+            </label>
+            <label className="checkbox-line" style={{ color: theme.textMain }}>
+              <input type="checkbox" checked={noticePinned} onChange={(event) => setNoticePinned(event.target.checked)} /> Ghim thông báo
+            </label>
             <button 
               className="primary-button" 
               style={{ marginTop: "10px" }}
@@ -1321,35 +1641,43 @@ function OwnerWorkspace({
               Gửi thông báo <Bell size={15} />
             </button>
 
-            <div style={{ marginTop: "2rem", borderTop: "1px solid rgba(173,214,255,.16)", paddingTop: "1.2rem" }}>
-              <span className="eyebrow">Lịch sử thông báo ({pastNotifications.length})</span>
+            <div style={{ marginTop: "2rem", borderTop: `1px solid ${theme.cardBorder}`, paddingTop: "1.2rem" }}>
+              <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử thông báo ({pastNotifications.length})</span>
               <div style={{ display: "grid", gap: ".5rem", marginTop: ".8rem", maxHeight: "240px", overflowY: "auto" }}>
                 {pastNotifications.map((item) => (
-                  <div key={item.id} style={{ padding: ".6rem .8rem", border: "1px solid rgba(173,214,255,.14)", borderRadius: ".35rem", background: "rgba(173,214,255,.04)" }}>
+                  <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${theme.cardBorder}`, borderRadius: "8px", background: theme.inputBg }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <strong style={{ color: "#e4f1ff", fontSize: ".85rem" }}>{item.title}</strong>
+                      <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
                       {item.pinned && <small style={{ color: "#ffbedb" }}>★ Đã ghim</small>}
                     </div>
-                    <p style={{ margin: ".25rem 0", color: "#b7cce4", fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
-                    <small style={{ color: "#6f8caf", fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
+                    <p style={{ margin: ".25rem 0", color: theme.textMuted, fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
+                    <small style={{ color: theme.textMuted, fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          <section className={`editor-card studio-pane ${studioTab === "tags" ? "is-active" : "is-hidden"}`}><span className="eyebrow">tags / đồng cỏ</span><h2>Quản lý tags</h2><p className="studio-help">Tags được tạo tự động từ hồ sơ thỏ. Bạn có thể thêm tag mới để dùng khi chỉnh sửa nhân vật.</p><label>Tag mới<input id="new-tag" placeholder="ví dụ: moonlit" /></label><button className="primary-button" onClick={() => { const input = document.getElementById("new-tag") as HTMLInputElement | null; if (input?.value.trim()) { toast.success("Tag sẽ khả dụng sau lần cập nhật hồ sơ tiếp theo."); input.value = ""; } }}>Thêm tag</button></section>
+          <section className={`editor-card studio-pane ${studioTab === "tags" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
+            <span className="eyebrow" style={{ color: theme.textMuted }}>tags / đồng cỏ</span>
+            <h2 style={{ color: theme.textMain }}>Quản lý tags</h2>
+            <p className="studio-help" style={{ color: theme.textMuted }}>Tags được tạo tự động từ hồ sơ thỏ. Bạn có thể thêm tag mới để dùng khi chỉnh sửa nhân vật.</p>
+            <label style={{ color: theme.textMuted }}>Tag mới
+              <input id="new-tag" placeholder="ví dụ: moonlit" style={{ background: theme.inputBg, borderColor: theme.inputBorder, color: theme.textMain }} />
+            </label>
+            <button className="primary-button" onClick={() => { const input = document.getElementById("new-tag") as HTMLInputElement | null; if (input?.value.trim()) { toast.success("Tag sẽ khả dụng sau lần cập nhật hồ sơ tiếp theo."); input.value = ""; } }}>Thêm tag</button>
+          </section>
 
           {/* TAB PLAYLIST */}
-          <section className={`editor-card studio-pane ${studioTab === "playlist" ? "is-active" : "is-hidden"}`}>
-            <span className="eyebrow">playlist / la Lapine radio</span>
-            <h2>{editingTrack ? `Chỉnh sửa bài: ${editingTrack.title}` : "Quản lý playlist"}</h2>
+          <section className={`editor-card studio-pane ${studioTab === "playlist" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
+            <span className="eyebrow" style={{ color: theme.textMuted }}>playlist / la Lapine radio</span>
+            <h2 style={{ color: theme.textMain }}>{editingTrack ? `Chỉnh sửa bài: ${editingTrack.title}` : "Quản lý playlist"}</h2>
             
             {editingTrack ? (
-              <div style={{ padding: "1rem", background: "rgba(173,214,255,.06)", borderRadius: ".45rem", border: "1px solid rgba(173,214,255,.18)", marginBottom: "1.5rem" }}>
-                <label>Tên bài hát<input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Nhập tên bài..." /></label>
-                <label style={{ marginTop: ".6rem" }}>Nghệ sĩ<input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="la Lapine" /></label>
-                <label style={{ marginTop: ".6rem" }}>Thay file âm thanh mới
+              <div style={{ padding: "1rem", background: theme.inputBg, borderRadius: "8px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.5rem" }}>
+                <label style={{ color: theme.textMuted }}>Tên bài hát<input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Nhập tên bài..." style={{ background: theme.cardBg, borderColor: theme.inputBorder, color: theme.textMain }} /></label>
+                <label style={{ marginTop: ".6rem", color: theme.textMuted }}>Nghệ sĩ<input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="la Lapine" style={{ background: theme.cardBg, borderColor: theme.inputBorder, color: theme.textMain }} /></label>
+                <label style={{ marginTop: ".6rem", color: theme.textMuted }}>Thay file âm thanh mới
                   <input type="file" accept="audio/*" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -1361,14 +1689,14 @@ function OwnerWorkspace({
                 </label>
                 <div className="editor-actions" style={{ marginTop: "1rem" }}>
                   <button type="button" className="primary-button" disabled={updateTrack.isPending || !editTitle.trim()} onClick={() => updateTrack.mutate({ id: editingTrack.id, title: editTitle.trim(), artist: editArtist.trim() || null, audioUrl: editingTrack.audioUrl || null })}>Lưu thay đổi</button>
-                  <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)}>Huỷ sửa</button>
+                  <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>Huỷ sửa</button>
                 </div>
               </div>
             ) : (
-              <div style={{ padding: "1.2rem", background: "rgba(173,214,255,.05)", borderRadius: ".45rem", border: "1px dashed rgba(173,214,255,.28)", marginBottom: "1.5rem", textAlign: "center" }}>
-                <UploadCloud size={32} style={{ margin: "0 auto .5rem", opacity: .7 }} />
-                <h3 style={{ margin: "0 0 .3rem", fontSize: "1rem", color: "#e4f1ff" }}>Tải lên nhiều bài nhạc cùng lúc</h3>
-                <p className="studio-help" style={{ margin: "0 0 .8rem" }}>
+              <div style={{ padding: "1.4rem", background: theme.inputBg, borderRadius: "10px", border: `1px dashed ${theme.inputBorder}`, marginBottom: "1.5rem", textAlign: "center" }}>
+                <UploadCloud size={32} style={{ margin: "0 auto .5rem", opacity: .7, color: theme.textMain }} />
+                <h3 style={{ margin: "0 0 .3rem", fontSize: "1rem", color: theme.textMain }}>Tải lên nhiều bài nhạc cùng lúc</h3>
+                <p className="studio-help" style={{ margin: "0 0 .8rem", color: theme.textMuted }}>
                   Chọn nhiều file (.mp3, .wav) từ máy tính. Hệ thống sẽ <b>tự động lấy tên file làm tên bài hát</b>!
                 </p>
                 <input 
@@ -1386,20 +1714,20 @@ function OwnerWorkspace({
               </div>
             )}
 
-            <span className="eyebrow">Danh sách bài trong radio ({(tracksQuery.data || []).length})</span>
+            <span className="eyebrow" style={{ color: theme.textMuted }}>Danh sách bài trong radio ({(tracksQuery.data || []).length})</span>
             <div className="playlist-admin-list" style={{ marginTop: ".6rem" }}>
               {(tracksQuery.data || []).map((track) => (
-                <div key={track.id} style={{ background: editingTrack?.id === track.id ? "rgba(173,214,255,.14)" : undefined }}>
+                <div key={track.id} style={{ background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, borderColor: theme.inputBorder, borderRadius: "8px" }}>
                   <div>
-                    <span>{track.title}</span>
-                    <small>{track.artist || "la Lapine"}</small>
+                    <span style={{ color: theme.textMain }}>{track.title}</span>
+                    <small style={{ color: theme.textMuted }}>{track.artist || "la Lapine"}</small>
                   </div>
                   <div className="playlist-admin-actions">
                     <button type="button" className="secondary-button" onClick={() => {
                       setEditingTrack(track);
                       setEditTitle(track.title);
                       setEditArtist(track.artist || "");
-                    }}>Sửa</button>
+                    }} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
                     <button type="button" className="secondary-button danger-text" onClick={() => {
                       if (window.confirm(`Xóa bài “${track.title}”?`)) deleteTrack.mutate({ id: track.id });
                     }}>Xóa</button>
@@ -1410,14 +1738,22 @@ function OwnerWorkspace({
           </section>
 
           {/* DANH SÁCH THỎ */}
-          <section className={`inventory-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`}>
-            <div className="editor-heading"><div><span className="eyebrow">catalog / {characters.length} hồ sơ</span><h2>Đang có trong cỏ</h2></div></div>
+          <section className={`inventory-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
+            <div className="editor-heading">
+              <div>
+                <span className="eyebrow" style={{ color: theme.textMuted }}>catalog / {characters.length} hồ sơ</span>
+                <h2 style={{ color: theme.textMain }}>Đang có trong cỏ</h2>
+              </div>
+            </div>
             <div className="inventory-list">
               {characters.map((character) => (
-                <div className={`inventory-item ${editing?.id === character.id ? "editing" : ""}`} key={character.id}>
-                  <img src={character.imageUrl || rabbitLogo} alt="" />
-                  <div><strong>{character.name}</strong><span>{tagsOf(character).slice(0, 2).join(" · ") || "chưa có tag"}</span></div>
-                  <button className="secondary-button edit-button" onClick={() => startEdit(character)}>Chỉnh sửa</button>
+                <div className={`inventory-item ${editing?.id === character.id ? "editing" : ""}`} key={character.id} style={{ background: theme.inputBg, borderColor: theme.inputBorder, borderRadius: "8px" }}>
+                  <img src={character.imageUrl || rabbitLogo} alt="" style={{ borderRadius: "6px" }} />
+                  <div>
+                    <strong style={{ color: theme.textMain }}>{character.name}</strong>
+                    <span style={{ color: theme.textMuted }}>{tagsOf(character).slice(0, 2).join(" · ") || "chưa có tag"}</span>
+                  </div>
+                  <button className="secondary-button edit-button" onClick={() => startEdit(character)} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
                   <button className="icon-button danger" onClick={() => setConfirmDelete(character)}>×</button>
                 </div>
               ))}
