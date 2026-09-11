@@ -1,6 +1,30 @@
 {
   "characters": [
     {
+      "id": 1789154968715,
+      "slug": "test",
+      "name": "test",
+      "caption": "test",
+      "imageUrl": null,
+      "tagsJson": "[\"R18\"]",
+      "section": "new",
+      "sectionsJson": "[\"new\"]",
+      "description": "",
+      "backstory": "",
+      "firstMessage": "",
+      "externalUrl": "https://lalapine.vercel.app/",
+      "accessTitle": null,
+      "passwordProtected": 0,
+      "password": null,
+      "passwordHint": null,
+      "titleColor": "#eff8ff",
+      "bodyColor": "#9db8d4",
+      "colorSync": 1,
+      "featured": 0,
+      "comingSoon": 0,
+      "favoriteCount": 0
+    },
+    {
       "id": 1789134062794,
       "slug": "fatum-beaufort",
       "name": "Fatum Beaufort",
