@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: XÓA SẠCH 100% CÁC VÒNG TRÒN ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: XÓA SẠCH 100% CÁC VÒNG TRÒN & THÊM HIỆU ỨNG POPUP DỊCH LÊN TRÊN ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -132,6 +132,37 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           height: 0 !important;
         }
 
+        /* HIỆU ỨNG POPUP: TỪ NHỎ CĂN CHÍNH GIỮA -> LỚN DẦN LÊN -> DỊCH LÊN TRÊN 1 CHÚT */
+        @keyframes popup-pop-and-rise {
+          0% {
+            opacity: 0;
+            transform: translateY(0) scale(0.38);
+            filter: blur(8px);
+          }
+          55% {
+            opacity: 1;
+            transform: translateY(0) scale(1.05);
+            filter: blur(0px);
+          }
+          78% {
+            transform: translateY(-30px) scale(0.98);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(-24px) scale(1);
+            filter: blur(0px);
+          }
+        }
+
+        .start-popup-box {
+          animation: popup-pop-and-rise 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justifyContent: center;
+          will-change: transform, opacity;
+        }
+
         /* CHỈ GIỮ LẠI LOGO XUẤT HIỆN ĐƠN THUẦN RẤT NỔI BẬT */
         @keyframes clean-logo-pop {
           0% {
@@ -163,63 +194,67 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         }
       `}</style>
 
-      {/* VÙNG CHỨA LOGO DUY NHẤT - TUYỆT ĐỐI KHÔNG CÓ BẤT KỲ VÒNG TRÒN NÀO XUNG QUANH */}
-      <div style={{ position: "relative", width: "110px", height: "110px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
-        <img 
-          src={rabbitLogo} 
-          alt="la Lapine" 
-          style={{ 
-            width: "95px", 
-            height: "95px", 
-            objectFit: "contain", 
-            position: "relative", 
-            zIndex: 10,
-            animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
-          }} 
-        />
-      </div>
+      {/* KHỐI POPUP TỔNG THỂ: CHỨA TOÀN BỘ CÁC PHẦN TỬ VỚI KHOẢNG CÁCH GẦN GIAO NHAU */}
+      <div className="start-popup-box">
+        {/* VÙNG CHỨA LOGO DUY NHẤT - TUYỆT ĐỐI KHÔNG CÓ BẤT KỲ VÒNG TRÒN NÀO XUNG QUANH */}
+        <div style={{ position: "relative", width: "110px", height: "110px", display: "grid", placeItems: "center", marginBottom: "0.45rem", zIndex: 10 }}>
+          <img 
+            src={rabbitLogo} 
+            alt="la Lapine" 
+            style={{ 
+              width: "95px", 
+              height: "95px", 
+              objectFit: "contain", 
+              position: "relative", 
+              zIndex: 10,
+              animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
+            }} 
+          />
+        </div>
 
-      {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
-      <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10 }}>
-        <h1 style={{ 
-          fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
-          fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
-          margin: "0 0 0.35rem",
-          letterSpacing: "0.04em",
-          color: "#f1f8ff",
-          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
-        }}>
-          la Lapine
-        </h1>
+        {/* TÊN PAGE, NOTE VÀ NÚT BẤM - CÁC NỘI DUNG GIỮ KHOẢNG CÁCH GẦN GÀNG LIỀN MẠCH */}
+        <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <h1 style={{ 
+            fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
+            fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
+            margin: "0 0 0.25rem",
+            letterSpacing: "0.04em",
+            color: "#f1f8ff",
+            lineHeight: 1.15,
+            textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
+          }}>
+            la Lapine
+          </h1>
 
-        <p style={{ 
-          fontSize: "12px", 
-          color: "#9db8d4", 
-          margin: "0 0 1.8rem",
-          letterSpacing: "0.08em",
-          textTransform: "lowercase",
-          fontFamily: '"DM Mono", monospace',
-          opacity: 0.85
-        }}>
-          không dành cho người dưới 18 tuổi.
-        </p>
+          <p style={{ 
+            fontSize: "12px", 
+            color: "#9db8d4", 
+            margin: "0 0 1.25rem",
+            letterSpacing: "0.08em",
+            textTransform: "lowercase",
+            fontFamily: '"DM Mono", monospace',
+            opacity: 0.85
+          }}>
+            không dành cho người dưới 18 tuổi.
+          </p>
 
-        <button 
-          className="primary-button" 
-          onClick={onStart}
-          style={{
-            minHeight: "46px",
-            padding: "0 2.4rem",
-            fontSize: "12.5px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            borderRadius: "999px",
-            boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
-            cursor: "pointer"
-          }}
-        >
-          Bắt đầu hành trình
-        </button>
+          <button 
+            className="primary-button" 
+            onClick={onStart}
+            style={{
+              minHeight: "46px",
+              padding: "0 2.4rem",
+              fontSize: "12.5px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              borderRadius: "999px",
+              boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
+              cursor: "pointer"
+            }}
+          >
+            Bắt đầu hành trình
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1316,7 +1351,7 @@ function OwnerWorkspace({
       firstMessage: character.firstMessage || "", 
       externalUrl: character.externalUrl || "", 
       accessTitle: character.accessTitle || "", 
-      password: character.password || "",
+      password: character.password || "", 
       passwordHint: character.passwordHint || "", 
       clearPassword: false,
       hasPassword: Boolean(character.passwordProtected || character.password)
