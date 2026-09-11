@@ -3,7 +3,8 @@ const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN || "";
 const GITHUB_OWNER = import.meta.env.VITE_GITHUB_OWNER || "";
 const GITHUB_REPO = import.meta.env.VITE_GITHUB_REPO || "";
 
-const FILE_PATH = "src/data/website_data.json";
+// Sửa dòng này:
+const FILE_PATH = "client/src/data/website_data.json"; // hoặc "src/data/website_data.json" tùy theo repo của bạn
 
 // 1. Hàm lưu dữ liệu từ Studio thẳng lên GitHub
 export async function saveToGitHub(content: any): Promise<boolean> {
