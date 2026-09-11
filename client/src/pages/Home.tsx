@@ -116,6 +116,14 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
+        /* KHẮC PHỤC LỖI VÒNG TRÒN THỪA CỦA CSS CŨ */
+        .intro-layer, .intro-ripple, .intro-center, .intro-foot {
+          display: none !important;
+          opacity: 0 !important;
+          animation: none !important;
+        }
+
+        /* SÓNG LUÔN LẤY TÂM CHÍNH GIỮA MÀN HÌNH, LAN CỰC RỘNG VÀ CHẬM RÃI */
         @keyframes center-screen-wave {
           0% {
             transform: translate(-50%, -50%) scale(0.3);
@@ -130,6 +138,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           }
         }
 
+        /* LOGO BẮT ĐẦU NGAY TẠI CHÍNH TÂM MÀN HÌNH, PHÓNG TO RỒI MỚI THU NHỎ VÀ NHÍCH LÊN */
         @keyframes logo-center-then-rise {
           0% {
             transform: scale(0.12) translateY(42px);
@@ -153,6 +162,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           }
         }
 
+        /* CHỮ VÀ NÚT BẤM XUẤT HIỆN SAU KHI LOGO NHÍCH LÊN */
         @keyframes fade-in-content {
           0% {
             opacity: 0;
@@ -178,9 +188,11 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         }
       `}</style>
 
+      {/* SÓNG TÂM ĐIỂM LUÔN NẰM CHÍNH GIỮA MÀN HÌNH TOÀN DIỆN */}
       <div className="screen-center-ripple" style={{ animation: "center-screen-wave 5.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
       <div className="screen-center-ripple" style={{ animation: "center-screen-wave 5.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.7s" }} />
 
+      {/* KHUNG CHỨA LOGO */}
       <div style={{ position: "relative", width: "130px", height: "130px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
         <img 
           src={rabbitLogo} 
@@ -196,6 +208,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         />
       </div>
 
+      {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
       <div style={{ animation: "fade-in-content 1.5s ease-out 2.4s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
