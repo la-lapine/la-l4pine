@@ -1,7 +1,9 @@
 import { trpc } from "@/lib/trpc";
+import { supabase } from "@/lib/supabase";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
-  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sun, Moon 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, 
+  ChevronRight, Lock, Tag, Sun, Moon, Edit2, Trash2 
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -43,6 +45,14 @@ type Character = {
   comingSoon?: number;
   favoriteCount?: number;
   createdAt?: string | Date;
+};
+
+type NotificationItem = {
+  id: string;
+  title: string;
+  body: string;
+  publishedAt: string;
+  pinned: boolean;
 };
 
 type LoveParticle = { id: number; x: number; y: number; delay: number; rotation: number; scale: number };
@@ -132,7 +142,6 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: CHỈ CÒN HIỆU ỨNG POP-UP CỦA LOGO ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -247,7 +256,6 @@ function StartScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-// ==================== MUSIC PLAYER ====================
 function MusicPlayer({ tracks }: { tracks: Track[] }) {
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -436,7 +444,6 @@ function MusicPlayer({ tracks }: { tracks: Track[] }) {
   );
 }
 
-// ==================== THẺ NHÂN VẬT ====================
 function CharacterCard({ character, onOpen, favorite, onFavorite }: { character: Character; onOpen: () => void; favorite: boolean; onFavorite: () => void }) {
   const tags = tagsOf(character);
   const { titleColor, bodyColor } = resolveCharacterColors(character);
@@ -539,7 +546,6 @@ function CharacterCard({ character, onOpen, favorite, onFavorite }: { character:
   );
 }
 
-// ==================== CỬA SỔ CHI TIẾT NHÂN VẬT ====================
 function DetailModal({ character, onClose, onFavorite, favorite }: { character: Character; onClose: () => void; onFavorite: () => void; favorite: boolean }) {
   const [open, setOpen] = useState("description");
   const [showAccess, setShowAccess] = useState(false);
@@ -632,7 +638,6 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
   );
 }
 
-// ==================== KHUNG MỞ KHÓA LIÊN KẾT CHO KHÁCH ====================
 function AccessModal({ character, onClose, onSuccess }: { character: Character; onClose: () => void; onSuccess: (url: string) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -695,7 +700,6 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   );
 }
 
-// ==================== HIỆU ỨNG QUAY SLOT CASINO CHO RANDOM ====================
 function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spinning, setSpinning] = useState(true);
@@ -773,28 +777,28 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
   );
 }
 
-function PublicPage({ characters, onStudio, tracks }: { characters: Character[]; onStudio: () => void; tracks: Track[] }) {
+function PublicPage({ 
+  characters, 
+  onStudio, 
+  tracks,
+  notifications,
+  readNotificationIds,
+  onMarkNotificationRead
+}: { 
+  characters: Character[]; 
+  onStudio: () => void; 
+  tracks: Track[];
+  notifications: NotificationItem[];
+  readNotificationIds: string[];
+  onMarkNotificationRead: (id: string) => void;
+}) {
   const [location] = useLocation();
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const notificationsQuery = trpc.notifications.list.useQuery(undefined, { refetchInterval: 30000 });
   
-  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>>(() => {
-    const saved = localStorage.getItem("lalapine-custom-notifications");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    if (notificationsQuery.data?.length) {
-      setNotifications(notificationsQuery.data);
-    }
-  }, [notificationsQuery.data]);
-
-  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => JSON.parse(localStorage.getItem("lalapine-read-notifications") || "[]"));
   const unreadCount = notifications.filter((item) => !readNotificationIds.includes(item.id)).length;
-  const markNotificationRead = (id: string) => { if (readNotificationIds.includes(id)) return; const next = [...readNotificationIds, id]; setReadNotificationIds(next); localStorage.setItem("lalapine-read-notifications", JSON.stringify(next)); };
   const latest = useMemo(() => [...characters].filter((character) => isInSection(character, "new")).sort((a, b) => b.id - a.id)[0] || characters[0], [characters]);
   const [selected, setSelected] = useState<Character | null>(null);
   const [showSlot, setShowSlot] = useState(false);
@@ -806,8 +810,25 @@ function PublicPage({ characters, onStudio, tracks }: { characters: Character[];
   const miracles = visible.filter((character) => isInSection(character, "featured")).sort((a, b) => a.name.localeCompare(b.name));
   const coming = visible.filter((character) => isInSection(character, "coming"));
   const favoriteMutation = trpc.characters.favorite.useMutation();
-  const toggleFavorite = (character: Character) => { const next = favorites.includes(character.id) ? favorites.filter((id) => id !== character.id) : [...favorites, character.id]; setFavorites(next); localStorage.setItem("lalapine-favorites", JSON.stringify(next)); favoriteMutation.mutate({ characterId: character.id, visitorId: visitorId() }); };
-  useEffect(() => { const onPointerDown = (event: PointerEvent) => { const spark = createLoveSpark(event.clientX, event.clientY); setLoves((current) => [...current.slice(-7), spark]); window.setTimeout(() => setLoves((current) => current.filter((item) => item.id !== spark.id)), 900); }; window.addEventListener("pointerdown", onPointerDown); return () => window.removeEventListener("pointerdown", onPointerDown); }, []);
+  
+  const toggleFavorite = (character: Character) => { 
+    const next = favorites.includes(character.id) ? favorites.filter((id) => id !== character.id) : [...favorites, character.id]; 
+    setFavorites(next); 
+    localStorage.setItem("lalapine-favorites", JSON.stringify(next)); 
+    try {
+      favoriteMutation.mutate({ characterId: character.id, visitorId: visitorId() }); 
+    } catch {}
+  };
+  
+  useEffect(() => { 
+    const onPointerDown = (event: PointerEvent) => { 
+      const spark = createLoveSpark(event.clientX, event.clientY); 
+      setLoves((current) => [...current.slice(-7), spark]); 
+      window.setTimeout(() => setLoves((current) => current.filter((item) => item.id !== spark.id)), 900); 
+    }; 
+    window.addEventListener("pointerdown", onPointerDown); 
+    return () => window.removeEventListener("pointerdown", onPointerDown); 
+  }, []);
 
   return (
     <>
@@ -961,14 +982,13 @@ function PublicPage({ characters, onStudio, tracks }: { characters: Character[];
       </div>
 
       {showNotifications && (
-        <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />
+        <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={onMarkNotificationRead} onClose={() => setShowNotifications(false)} />
       )}
     </>
   );
 }
 
-// ==================== HỘP THÔNG BÁO CHO NGƯỜI DÙNG ====================
-function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
+function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: NotificationItem[]; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = notifications.find((item) => item.id === selectedId);
 
@@ -1156,19 +1176,22 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   );
 }
 
-// ==================== WORKSPACE STUDIO ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
   onSaveCharacters,
   tracks,
-  onSaveTracks
+  onSaveTracks,
+  notifications,
+  onSaveNotifications
 }: { 
   characters: Character[]; 
   onClose: () => void; 
   onSaveCharacters: (newChars: Character[]) => void;
   tracks: Track[];
   onSaveTracks: (newTracks: Track[]) => void;
+  notifications: NotificationItem[];
+  onSaveNotifications: (newNotifs: NotificationItem[]) => void;
 }) {
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem("lalapine-studio-theme") !== "light";
@@ -1203,7 +1226,6 @@ function OwnerWorkspace({
   const [form, setForm] = useState(blank);
   const [confirmDelete, setConfirmDelete] = useState<Character | null>(null);
   const [studioTab, setStudioTab] = useState("characters");
-  const uploadAsset = trpc.owner.uploadAsset.useMutation();
 
   const systemAvailableTags = useMemo(() => {
     const all = characters.flatMap(tagsOf);
@@ -1221,46 +1243,40 @@ function OwnerWorkspace({
     setForm({ ...form, tags: updatedTags.join(", ") });
   };
 
-  // --- NOTIFICATION STATE (CÓ SỬA & XÓA) ---
+  // NOTIFICATION STATE
   const [noticeTitle, setNoticeTitle] = useState("Một lời nhắn từ đồng cỏ");
   const [noticeBody, setNoticeBody] = useState("");
   const [noticePublishedAt, setNoticePublishedAt] = useState("");
   const [noticePinned, setNoticePinned] = useState(false);
   const [editingNotifId, setEditingNotifId] = useState<string | null>(null);
 
-  const [pastNotifications, setPastNotifications] = useState<Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>>(() => {
-    const saved = localStorage.getItem("lalapine-custom-notifications");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const handleSaveNotification = () => {
+  const handleSendNotification = () => {
     if (!noticeBody.trim()) {
       toast.error("Vui lòng nhập nội dung thông báo.");
       return;
     }
 
-    let nextList;
+    let nextList: NotificationItem[];
     if (editingNotifId) {
-      nextList = pastNotifications.map(n => 
+      nextList = notifications.map(n => 
         n.id === editingNotifId 
           ? { ...n, title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ", body: noticeBody.trim(), publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned }
           : n
       );
       toast.success("Cập nhật thông báo thành công!");
     } else {
-      const newNotif = {
+      const newNotif: NotificationItem = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ",
         body: noticeBody.trim(),
         publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(),
         pinned: noticePinned
       };
-      nextList = [newNotif, ...pastNotifications];
+      nextList = [newNotif, ...notifications];
       toast.success("Gửi thông báo thành công!");
     }
 
-    setPastNotifications(nextList);
-    localStorage.setItem("lalapine-custom-notifications", JSON.stringify(nextList));
+    onSaveNotifications(nextList);
 
     setNoticeTitle("Một lời nhắn từ đồng cỏ");
     setNoticeBody("");
@@ -1269,11 +1285,18 @@ function OwnerWorkspace({
     setEditingNotifId(null);
   };
 
-  const handleDeleteNotification = (id: string) => {
+  const handleEditNotif = (notif: NotificationItem) => {
+    setEditingNotifId(notif.id);
+    setNoticeTitle(notif.title);
+    setNoticeBody(notif.body);
+    setNoticePinned(notif.pinned);
+    setNoticePublishedAt(notif.publishedAt ? new Date(notif.publishedAt).toISOString().slice(0, 16) : "");
+  };
+
+  const handleDeleteNotif = (id: string) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa thông báo này?")) {
-      const nextList = pastNotifications.filter(n => n.id !== id);
-      setPastNotifications(nextList);
-      localStorage.setItem("lalapine-custom-notifications", JSON.stringify(nextList));
+      const nextList = notifications.filter(n => n.id !== id);
+      onSaveNotifications(nextList);
       toast.success("Đã xóa thông báo.");
       if (editingNotifId === id) {
         setNoticeTitle("Một lời nhắn từ đồng cỏ");
@@ -1285,7 +1308,7 @@ function OwnerWorkspace({
     }
   };
 
-  // --- PLAYLIST STATE ---
+  // PLAYLIST STATE
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editArtist, setEditArtist] = useState("");
@@ -1469,7 +1492,6 @@ function OwnerWorkspace({
         </header>
 
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.9fr)", gap: "1.4rem" }}>
-          {/* TAB HỒ SƠ THỎ */}
           <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
             <span className="eyebrow" style={{ color: theme.textMuted }}>{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
             <h2 style={{ color: theme.textMain }}>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
@@ -1726,9 +1748,9 @@ function OwnerWorkspace({
                 </div>
 
                 <div style={{ marginTop: "1.8rem", borderTop: `1px solid ${theme.cardBorder}`, paddingTop: "1rem" }}>
-                  <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử ({pastNotifications.length})</span>
+                  <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử ({notifications.length})</span>
                   <div style={{ display: "grid", gap: ".5rem", marginTop: ".6rem", maxHeight: "280px", overflowY: "auto" }}>
-                    {pastNotifications.map((item) => (
+                    {notifications.map((item) => (
                       <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${editingNotifId === item.id ? '#9ecaff' : theme.cardBorder}`, borderRadius: "8px", background: editingNotifId === item.id ? "rgba(173,214,255,0.15)" : theme.inputBg }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                           <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
@@ -1906,7 +1928,6 @@ function CharacterPreviewModal({ form, onClose }: { form: { name: string; captio
 }
 
 function PreviewZone({ form, zone }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number }; zone: string }) {
-  const tags = form.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   const image = form.imageUrl || rabbitLogo; const { titleColor, bodyColor } = resolveCharacterColors(form);
   if (zone === "coming") return <div className="preview-coming-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><span className="preview-coming-art"><img src={image} alt={form.name || "Ảnh"} /></span><span><strong>{form.name || "Tên"}</strong><small>{form.caption}</small></span><ArrowUpRight size={16} /></div>;
   return (
@@ -1961,29 +1982,25 @@ function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Char
   return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character.name}?</h2><p>Hồ sơ sẽ rời khỏi đồng cỏ. Bạn có chắc muốn tiếp tục không?</p><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa hồ sơ</button></div></div></div>;
 }
 
+// ==================== COMPONENT CHÍNH (ĐỒNG BỘ SUPABASE) ====================
 export default function Home() {
-  const { data } = trpc.characters.list.useQuery(); 
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
-
   const [hasEntered, setHasEntered] = useState(false);
 
+  // 1. Nhân vật
   const [characters, setCharacters] = useState<Character[]>(() => {
     const saved = localStorage.getItem("lalapine-custom-characters");
     return saved ? JSON.parse(saved) : fallbackCharacters;
   });
 
-  useEffect(() => {
-    if (data?.length) {
-      setCharacters(data as Character[]);
-    }
-  }, [data]);
+  // 2. Thông báo
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    const saved = localStorage.getItem("lalapine-custom-notifications");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  const handleSaveCharacters = (newChars: Character[]) => {
-    setCharacters(newChars);
-    localStorage.setItem("lalapine-custom-characters", JSON.stringify(newChars));
-  };
-
+  // 3. Playlist bài hát
   const [tracks, setTracks] = useState<Track[]>(() => {
     const saved = localStorage.getItem("lalapine-custom-tracks");
     if (saved) {
@@ -1992,11 +2009,87 @@ export default function Home() {
     return defaultTracks;
   });
 
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem("lalapine-read-notifications") || "[]");
+  });
+
+  const markNotificationRead = (id: string) => {
+    if (readNotificationIds.includes(id)) return;
+    const next = [...readNotificationIds, id];
+    setReadNotificationIds(next);
+    localStorage.setItem("lalapine-read-notifications", JSON.stringify(next));
+  };
+
+  // FETCH DỮ LIỆU TỪ SUPABASE KHI MỞ WEB
+  useEffect(() => {
+    async function loadCloudData() {
+      try {
+        if (!supabase) return;
+        const { data, error } = await supabase
+          .from("website_data")
+          .select("content")
+          .eq("id", "main")
+          .single();
+
+        if (data?.content && !error) {
+          const cloudContent = typeof data.content === "string" ? JSON.parse(data.content) : data.content;
+          
+          if (Array.isArray(cloudContent.characters) && cloudContent.characters.length > 0) {
+            setCharacters(cloudContent.characters);
+            localStorage.setItem("lalapine-custom-characters", JSON.stringify(cloudContent.characters));
+          }
+          if (Array.isArray(cloudContent.notifications)) {
+            setNotifications(cloudContent.notifications);
+            localStorage.setItem("lalapine-custom-notifications", JSON.stringify(cloudContent.notifications));
+          }
+          if (Array.isArray(cloudContent.tracks) && cloudContent.tracks.length > 0) {
+            setTracks(cloudContent.tracks);
+            localStorage.setItem("lalapine-custom-tracks", JSON.stringify(cloudContent.tracks));
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi nạp dữ liệu Supabase:", err);
+      }
+    }
+    loadCloudData();
+  }, []);
+
+  // HÀM ĐỒNG BỘ DỮ LIỆU LÊN SUPABASE
+  const syncToCloud = async (updatedCharacters = characters, updatedNotifs = notifications, updatedTracks = tracks) => {
+    try {
+      if (!supabase) return;
+      const payload = {
+        characters: updatedCharacters,
+        notifications: updatedNotifs,
+        tracks: updatedTracks
+      };
+      await supabase
+        .from("website_data")
+        .upsert({ id: "main", content: payload });
+    } catch (err) {
+      console.error("Lỗi đồng bộ lên Supabase:", err);
+    }
+  };
+
+  const handleSaveCharacters = (newChars: Character[]) => {
+    setCharacters(newChars);
+    localStorage.setItem("lalapine-custom-characters", JSON.stringify(newChars));
+    void syncToCloud(newChars, notifications, tracks);
+  };
+
+  const handleSaveNotifications = (newNotifs: NotificationItem[]) => {
+    setNotifications(newNotifs);
+    localStorage.setItem("lalapine-custom-notifications", JSON.stringify(newNotifs));
+    void syncToCloud(characters, newNotifs, tracks);
+  };
+
   const handleSaveTracks = (newTracks: Track[]) => {
     setTracks(newTracks);
     localStorage.setItem("lalapine-custom-tracks", JSON.stringify(newTracks));
+    void syncToCloud(characters, notifications, newTracks);
   };
 
+  // PHÍM TẮT MỞ STUDIO (Ctrl + Shift + L)
   useEffect(() => { 
     const handler = (event: KeyboardEvent) => { 
       const key = event.key.toLowerCase(); 
@@ -2014,12 +2107,10 @@ export default function Home() {
 
   return (
     <>
-      {/* MÀN HÌNH BẮT ĐẦU */}
       {!hasEntered && (
         <StartScreen onStart={() => setHasEntered(true)} />
       )}
 
-      {/* NỘI DUNG CHÍNH */}
       {studio ? (
         <OwnerWorkspace 
           characters={characters} 
@@ -2027,14 +2118,20 @@ export default function Home() {
           onSaveCharacters={handleSaveCharacters} 
           tracks={tracks}
           onSaveTracks={handleSaveTracks}
+          notifications={notifications}
+          onSaveNotifications={handleSaveNotifications}
         />
       ) : (
         <PublicPage 
           characters={characters} 
           onStudio={() => setStudioGate(true)} 
           tracks={tracks}
+          notifications={notifications}
+          readNotificationIds={readNotificationIds}
+          onMarkNotificationRead={markNotificationRead}
         />
       )}
+      
       {studioGate && !studio && (
         <AdminGate 
           onClose={() => setStudioGate(false)} 
