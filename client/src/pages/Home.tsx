@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
-  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sun, Moon 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sun, Moon, Music, Plus 
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -11,6 +11,13 @@ import { resolveCharacterColors } from "@shared/characterColors";
 
 // MẬT KHẨU STUDIO DUY NHẤT
 const MASTER_PASSWORD = "jk0807";
+
+type Track = {
+  id: number;
+  title: string;
+  artist?: string | null;
+  audioUrl: string;
+};
 
 type Character = {
   id: number;
@@ -43,11 +50,38 @@ type LoveSpark = { id: number; x: number; y: number; rotation: number; particles
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
 const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
 
-// Danh sách nhạc mặc định
-const defaultTracks = [
-  { id: 101, title: "Lullaby of the Meadow", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
-  { id: 102, title: "Moonlit Clover", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3" },
-  { id: 103, title: "Whispering Breeze", artist: "la Lapine", audioUrl: "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f77c30.mp3" }
+// DANH SÁCH 30 BÀI HÁT GỐC BAN ĐẦU
+const defaultTracks: Track[] = [
+  { id: 1, title: "southbound", artist: "Artemas", audioUrl: "/audio/Artemas - southbound (official visualizer) - Artemas.mp3" },
+  { id: 2, title: "Gimme More", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3" },
+  { id: 3, title: "Toxic", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Toxic (Official HD Video) - BritneySpearsVEVO.mp3" },
+  { id: 4, title: "Everything is romantic", artist: "Charli xcx", audioUrl: "/audio/Charli xcx - Everything is romantic (official lyric video) - Charli xcx.mp3" },
+  { id: 5, title: "LET THE WORLD BURN", artist: "Chris Grey", audioUrl: "/audio/Chris Grey - LET THE WORLD BURN (Official Lyric Video) - Chris Grey.mp3" },
+  { id: 6, title: "Dark Paradise", artist: "Lana Del Rey", audioUrl: "/audio/Dark Paradise - Lana Del Rey.mp3" },
+  { id: 7, title: "Training Season (Live)", artist: "Dua Lipa", audioUrl: "/audio/Dua Lipa - Training Season (Live from the Royal Albert Hall) [Official Performance Video] - Dua Lipa.mp3" },
+  { id: 8, title: "UNETHICAL", artist: "Faouzia", audioUrl: "/audio/Faouzia - UNETHICAL (Official Music Video) - Faouzia.mp3" },
+  { id: 9, title: "On The Floor", artist: "Jennifer Lopez, Pitbull", audioUrl: "/audio/Jennifer Lopez, Pitbull - On The Floor (Official Music Video) - JenniferLopezVEVO.mp3" },
+  { id: 10, title: "Born To Die", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Born To Die - LanaDelReyVEVO.mp3" },
+  { id: 11, title: "Brooklyn Baby", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Brooklyn Baby (Official Audio) - LanaDelReyVEVO.mp3" },
+  { id: 12, title: "Doin' Time", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Doin' Time - LanaDelReyVEVO.mp3" },
+  { id: 13, title: "Ultraviolence", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Ultraviolence (Audio) - LanaDelReyVEVO.mp3" },
+  { id: 14, title: "Legendary Lovers", artist: "Katy Perry", audioUrl: "/audio/Legendary Lovers - Katy Perry.mp3" },
+  { id: 15, title: "When Did You Get Hot", artist: "Sabrina Carpenter", audioUrl: "/audio/Sabrina Carpenter - When Did You Get Hot (Official Lyric Video) - SabrinaCarpenterVEVO.mp3" },
+  { id: 16, title: "Sad Girl", artist: "Lana Del Rey", audioUrl: "/audio/Sad Girl - Lana Del Rey.mp3" },
+  { id: 17, title: "Salvatore", artist: "Lana Del Rey", audioUrl: "/audio/Salvatore - Lana Del Rey.mp3" },
+  { id: 18, title: "Can't Remember to Forget You", artist: "Shakira ft. Rihanna", audioUrl: "/audio/Shakira - Can't Remember to Forget You (Official Video) ft. Rihanna - shakiraVEVO.mp3" },
+  { id: 19, title: "back to friends", artist: "sombr", audioUrl: "/audio/sombr - back to friends (official video) - sombr.mp3" },
+  { id: 20, title: "undressed", artist: "sombr", audioUrl: "/audio/sombr - undressed (official lyric video) - sombr.mp3" },
+  { id: 21, title: "we never dated", artist: "sombr", audioUrl: "/audio/sombr - we never dated (official lyric video) - sombr.mp3" },
+  { id: 22, title: "Moth To A Flame", artist: "Swedish House Mafia, The Weeknd", audioUrl: "/audio/Swedish House Mafia and The Weeknd - Moth To A Flame (Official Lyric Video) - SHMVEVO.mp3" },
+  { id: 23, title: "A Little Death", artist: "The Neighbourhood", audioUrl: "/audio/The Neighbourhood - A Little Death (Official Audio) - TheNeighbourhoodVEVO.mp3" },
+  { id: 24, title: "Afraid", artist: "The Neighbourhood", audioUrl: "/audio/The Neighbourhood - Afraid (Official Audio) - TheNeighbourhoodVEVO.mp3" },
+  { id: 25, title: "Sweater Weather", artist: "The Neighbourhood", audioUrl: "/audio/The Neighbourhood - Sweater Weather (Official Video) - TheNeighbourhoodVEVO.mp3" },
+  { id: 26, title: "After Hours", artist: "The Weeknd", audioUrl: "/audio/The Weeknd - After Hours (Audio) - The Weeknd.mp3" },
+  { id: 27, title: "Call Out My Name", artist: "The Weeknd", audioUrl: "/audio/The Weeknd - Call Out My Name (Official Audio) - The Weeknd.mp3" },
+  { id: 28, title: "House Of Balloons / Glass Table Girls", artist: "The Weeknd", audioUrl: "/audio/The Weeknd - House Of Balloons _ Glass Table Girls - The Weeknd.mp3" },
+  { id: 29, title: "One Of The Girls", artist: "The Weeknd, JENNIE, Lily-Rose Depp", audioUrl: "/audio/The Weeknd, JENNIE, Lily-Rose Depp - One Of The Girls (Official Video) - TheWeekndVEVO.mp3" },
+  { id: 30, title: "The Abyss", artist: "The Weeknd, Lana Del Rey", audioUrl: "/audio/The Weeknd, Lana Del Rey - The Abyss (Audio) - TheWeekndVEVO.mp3" }
 ];
 
 const fallbackCharacters: Character[] = [
@@ -98,7 +132,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: HIỆU ỨNG POPUP TO HƠN, NÂNG NHẸ & KHOẢNG CÁCH GẦN NHAU ====================
+// ==================== MÀN HÌNH BẮT ĐẦU ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -118,55 +152,17 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* LỆNH TIÊU DIỆT TOÀN DIỆN MỌI VÒNG TRÒN DƯ THỪA TRÊN TOÀN BỘ TRANG WEB */
-        .hero-orbit, .orbit-one, .orbit-two, .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring, .concentric-ripple,
-        [class*="orbit"], [class*="ripple"] {
+        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
+        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
           display: none !important;
           opacity: 0 !important;
           animation: none !important;
           visibility: hidden !important;
-          border: none !important;
-          box-shadow: none !important;
-          width: 0 !important;
-          height: 0 !important;
         }
 
-        /* HIỆU ỨNG POPUP: TỪ NHỎ CĂN CHÍNH GIỮA -> BUNG TO HƠN HẲN -> DỊCH LÊN TRÊN 1 CHÚT */
-        @keyframes popup-pop-and-rise-larger {
+        @keyframes clean-logo-appear {
           0% {
-            opacity: 0;
-            transform: translateY(0) scale(0.35);
-            filter: blur(8px);
-          }
-          55% {
-            opacity: 1;
-            transform: translateY(0) scale(1.18);
-            filter: blur(0px);
-          }
-          78% {
-            transform: translateY(-32px) scale(1.06);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(-26px) scale(1.08);
-            filter: blur(0px);
-          }
-        }
-
-        .start-popup-box {
-          animation: popup-pop-and-rise-larger 1.2s cubic-bezier(0.2, 1, 0.35, 1) both;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justifyContent: center;
-          will-change: transform, opacity;
-        }
-
-        /* CHỈ GIỮ LẠI LOGO XUẤT HIỆN ĐƠN THUẦN RẤT NỔI BẬT */
-        @keyframes clean-logo-pop {
-          0% {
-            transform: scale(0.2);
+            transform: scale(0.25);
             opacity: 0;
             filter: blur(8px);
           }
@@ -178,11 +174,11 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.4));
+            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.45));
           }
         }
 
-        @keyframes clean-text-fade {
+        @keyframes clean-text-appear {
           0% {
             opacity: 0;
             transform: translateY(12px);
@@ -194,75 +190,68 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         }
       `}</style>
 
-      {/* KHỐI POPUP TỔNG THỂ ĐƯỢC PHÓNG TO HƠN, GIỮ KHOẢNG CÁCH GẦN GÀNG GẮN KẾT */}
-      <div className="start-popup-box">
-        {/* VÙNG CHỨA LOGO DUY NHẤT */}
-        <div style={{ position: "relative", width: "118px", height: "118px", display: "grid", placeItems: "center", marginBottom: "0.45rem", zIndex: 10 }}>
-          <img 
-            src={rabbitLogo} 
-            alt="la Lapine" 
-            style={{ 
-              width: "105px", 
-              height: "105px", 
-              objectFit: "contain", 
-              position: "relative", 
-              zIndex: 10,
-              filter: "drop-shadow(0 0 25px rgba(162, 218, 255, 0.5))",
-              animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
-            }} 
-          />
-        </div>
+      <div style={{ position: "relative", width: "120px", height: "120px", display: "grid", placeItems: "center", marginBottom: "1rem", zIndex: 10 }}>
+        <img 
+          src={rabbitLogo} 
+          alt="la Lapine" 
+          style={{ 
+            width: "95px", 
+            height: "95px", 
+            objectFit: "contain", 
+            position: "relative", 
+            zIndex: 10,
+            animation: "clean-logo-appear 1.6s cubic-bezier(0.2, 1, 0.3, 1) both"
+          }} 
+        />
+      </div>
 
-        {/* TÊN PAGE, NOTE VÀ NÚT BẤM - CÁC NỘI DUNG GIỮ KHOẢNG CÁCH RẤT GẦN NHAU */}
-        <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <h1 style={{ 
-            fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
-            fontSize: "clamp(2.6rem, 6vw, 3.8rem)", 
-            margin: "0 0 0.2rem",
-            letterSpacing: "0.04em",
-            color: "#f1f8ff",
-            lineHeight: 1.15,
-            textShadow: "0 0 25px rgba(173, 214, 255, 0.35)"
-          }}>
-            la Lapine
-          </h1>
+      <div style={{ animation: "clean-text-appear 1.4s ease-out 0.6s both", zIndex: 10 }}>
+        <h1 style={{ 
+          fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
+          fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
+          margin: "0 0 0.35rem",
+          letterSpacing: "0.04em",
+          color: "#f1f8ff",
+          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
+        }}>
+          la Lapine
+        </h1>
 
-          <p style={{ 
-            fontSize: "12px", 
-            color: "#9db8d4", 
-            margin: "0 0 1.25rem",
-            letterSpacing: "0.08em",
-            textTransform: "lowercase",
-            fontFamily: '"DM Mono", monospace',
-            opacity: 0.85
-          }}>
-            không dành cho người dưới 18 tuổi.
-          </p>
+        <p style={{ 
+          fontSize: "12px", 
+          color: "#9db8d4", 
+          margin: "0 0 1.8rem",
+          letterSpacing: "0.08em",
+          textTransform: "lowercase",
+          fontFamily: '"DM Mono", monospace',
+          opacity: 0.85
+        }}>
+          không dành cho người dưới 18 tuổi.
+        </p>
 
-          <button 
-            className="primary-button" 
-            onClick={onStart}
-            style={{
-              minHeight: "48px",
-              padding: "0 2.6rem",
-              fontSize: "13px",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              borderRadius: "999px",
-              boxShadow: "0 0 28px rgba(185, 221, 255, 0.38)",
-              cursor: "pointer"
-            }}
-          >
-            Bắt đầu hành trình
-          </button>
-        </div>
+        <button 
+          className="primary-button" 
+          onClick={onStart}
+          style={{
+            minHeight: "46px",
+            padding: "0 2.4rem",
+            fontSize: "12.5px",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            borderRadius: "999px",
+            boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
+            cursor: "pointer"
+          }}
+        >
+          Bắt đầu hành trình
+        </button>
       </div>
     </div>
   );
 }
 
-// ==================== MUSIC PLAYER ====================
-function MusicPlayer() {
+// ==================== MUSIC PLAYER (ĐỒNG BỘ TRỰC TIẾP VỚI STUDIO) ====================
+function MusicPlayer({ tracks }: { tracks: Track[] }) {
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -270,12 +259,8 @@ function MusicPlayer() {
   const [repeat, setRepeat] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const tracksQuery = trpc.tracks.list.useQuery();
-  const serverTracks = tracksQuery.data?.filter((track) => Boolean(track.audioUrl));
-  const tracks = (serverTracks && serverTracks.length > 0) ? serverTracks : defaultTracks;
-
-  const [trackIndex, setTrackIndex] = useState(() => Math.floor(Math.random() * tracks.length));
-  const current = tracks[trackIndex] || tracks[0];
+  const [trackIndex, setTrackIndex] = useState(() => Math.floor(Math.random() * (tracks.length || 1)));
+  const current = tracks[trackIndex] || tracks[0] || defaultTracks[0];
   const audioSrc = useMemo(() => encodeStorageUrl(current?.audioUrl), [current?.audioUrl]);
 
   const playCurrent = async () => {
@@ -713,7 +698,7 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   );
 }
 
-// ==================== HIỆU ỨNG QUAY SLOT CASINO CHO RANDOM ====================
+// ==================== HIỆU ỨNG QUAY SLOT CASINO ====================
 function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spinning, setSpinning] = useState(true);
@@ -791,7 +776,7 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
   );
 }
 
-function PublicPage({ characters, onStudio }: { characters: Character[]; onStudio: () => void }) {
+function PublicPage({ characters, onStudio, tracks }: { characters: Character[]; onStudio: () => void; tracks: Track[] }) {
   const [location] = useLocation();
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);
@@ -846,7 +831,6 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
                 </div>
               </div>
               <div className="hero-art-wrap">
-                {/* ĐÃ XÓA SẠCH CÁC THẺ HERO-ORBIT GÂY RA VÒNG TRÒN LỆCH */}
                 <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
                   {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
                   <div className="hero-art-label">
@@ -961,7 +945,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
           </footer>
         </main>
 
-        <MusicPlayer />
+        <MusicPlayer tracks={tracks} />
         
         {selected && (
           <DetailModal character={selected} onClose={() => setSelected(null)} favorite={favorites.includes(selected.id)} onFavorite={() => toggleFavorite(selected)} />
@@ -986,7 +970,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   );
 }
 
-// ==================== HỘP THÔNG BÁO CHO NGƯỜI DÙNG ====================
+// ==================== HỘP THÔNG BÁO ====================
 function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = notifications.find((item) => item.id === selectedId);
@@ -1137,7 +1121,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
-// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
+// ==================== KHUNG NHẬP MẬT KHẨU STUDIO ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -1177,15 +1161,19 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   );
 }
 
-// ==================== WORKSPACE STUDIO ====================
+// ==================== WORKSPACE STUDIO: QUẢN LÝ VÀ CHỈNH SỬA TOÀN BỘ PLAYLIST NHẠC ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
-  onSaveCharacters 
+  onSaveCharacters,
+  tracks,
+  onSaveTracks
 }: { 
   characters: Character[]; 
   onClose: () => void; 
   onSaveCharacters: (newChars: Character[]) => void;
+  tracks: Track[];
+  onSaveTracks: (newTracks: Track[]) => void;
 }) {
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem("lalapine-studio-theme") !== "light";
@@ -1224,8 +1212,6 @@ function OwnerWorkspace({
   const [noticePinned, setNoticePinned] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Character | null>(null);
   const [studioTab, setStudioTab] = useState("characters");
-  const uploadAsset = trpc.owner.uploadAsset.useMutation();
-  const tracksQuery = trpc.tracks.list.useQuery();
 
   const systemAvailableTags = useMemo(() => {
     const all = characters.flatMap(tagsOf);
@@ -1248,62 +1234,71 @@ function OwnerWorkspace({
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [uploadingBatch, setUploadingBatch] = useState(false);
-  const [batchProgress, setBatchProgress] = useState("");
-  const [editingTrack, setEditingTrack] = useState<{ id: number; title: string; artist?: string | null; audioUrl?: string | null } | null>(null);
+  // ==================== QUẢN LÝ PLAYLIST TRỰC TIẾP ====================
+  const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editArtist, setEditArtist] = useState("");
+  const [editUrl, setEditUrl] = useState("");
 
-  const addTrack = trpc.owner.addTrack.useMutation({ onSuccess: () => { tracksQuery.refetch(); } });
-  const updateTrack = trpc.owner.updateTrack.useMutation({ 
-    onSuccess: () => { 
-      toast.success("Đã cập nhật bài nhạc thành công!"); 
-      tracksQuery.refetch(); 
-      setEditingTrack(null); 
-    } 
-  });
-  const deleteTrack = trpc.owner.deleteTrack.useMutation({ onSuccess: () => { toast.success("Đã xóa bài nhạc khỏi playlist."); tracksQuery.refetch(); if (editingTrack) setEditingTrack(null); } });
+  // Form thêm bài hát mới
+  const [newTitle, setNewTitle] = useState("");
+  const [newArtist, setNewArtist] = useState("");
+  const [newUrl, setNewUrl] = useState("");
 
-  const handleBatchUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    setUploadingBatch(true);
-    const fileList = Array.from(files);
-    let successCount = 0;
+  // LƯU THAY ĐỔI 1 BÀI HÁT
+  const handleUpdateTrack = (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingTrack || !editTitle.trim() || !editUrl.trim()) return;
 
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      const autoTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
-      setBatchProgress(`Đang tải (${i + 1}/${fileList.length}): ${autoTitle}`);
+    const nextTracks = tracks.map((t) => 
+      t.id === editingTrack.id 
+        ? { ...t, title: editTitle.trim(), artist: editArtist.trim() || "la Lapine", audioUrl: editUrl.trim() } 
+        : t
+    );
+    onSaveTracks(nextTracks);
+    toast.success(`Đã cập nhật bài "${editTitle.trim()}"!`);
+    setEditingTrack(null);
+  };
 
-      try {
-        const dataUrl = await fileToDataUrl(file);
-        const result = await uploadAsset.mutateAsync({
-          filename: file.name,
-          mimeType: file.type || "audio/mpeg",
-          data: dataUrl
-        });
-
-        await addTrack.mutateAsync({
-          title: autoTitle || "Bản nhạc mới",
-          artist: "la Lapine",
-          audioUrl: result.url,
-          sortOrder: (tracksQuery.data?.length || 0) + i
-        });
-        successCount++;
-      } catch (err) {
-        console.error("Lỗi khi tải file:", file.name, err);
-      }
+  // THÊM BÀI HÁT MỚI VÀO PLAYLIST
+  const handleAddNewTrack = (e: FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newUrl.trim()) {
+      toast.error("Vui lòng nhập tên bài hát và đường dẫn âm thanh.");
+      return;
     }
 
-    setUploadingBatch(false);
-    setBatchProgress("");
-    event.target.value = "";
-    if (successCount > 0) {
-      toast.success(`Đã thêm thành công ${successCount} bài nhạc vào playlist!`);
-      tracksQuery.refetch();
-    } else {
-      toast.error("Không thể tải bài nhạc lên lúc này.");
+    const newTrackItem: Track = {
+      id: Date.now(),
+      title: newTitle.trim(),
+      artist: newArtist.trim() || "la Lapine",
+      audioUrl: newUrl.trim()
+    };
+
+    const nextTracks = [...tracks, newTrackItem];
+    onSaveTracks(nextTracks);
+    toast.success(`Đã thêm bài "${newTitle.trim()}" vào playlist!`);
+    setNewTitle("");
+    setNewArtist("");
+    setNewUrl("");
+  };
+
+  // XÓA BÀI HÁT KHỎI PLAYLIST
+  const handleDeleteTrack = (trackToDelete: Track) => {
+    if (window.confirm(`Xóa bài "${trackToDelete.title}" khỏi danh sách phát?`)) {
+      const nextTracks = tracks.filter((t) => t.id !== trackToDelete.id);
+      onSaveTracks(nextTracks);
+      toast.success(`Đã xóa bài "${trackToDelete.title}".`);
+      if (editingTrack?.id === trackToDelete.id) setEditingTrack(null);
+    }
+  };
+
+  // KHÔI PHỤC 30 BÀI MẶC ĐỊNH
+  const handleResetDefaultTracks = () => {
+    if (window.confirm("Khôi phục danh sách về 30 bài hát gốc mặc định?")) {
+      onSaveTracks(defaultTracks);
+      toast.success("Đã khôi phục 30 bài hát mặc định!");
+      setEditingTrack(null);
     }
   };
 
@@ -1352,7 +1347,7 @@ function OwnerWorkspace({
       firstMessage: character.firstMessage || "", 
       externalUrl: character.externalUrl || "", 
       accessTitle: character.accessTitle || "", 
-      password: character.password || "", 
+      password: character.password || "",
       passwordHint: character.passwordHint || "", 
       clearPassword: false,
       hasPassword: Boolean(character.passwordProtected || character.password)
@@ -1468,6 +1463,7 @@ function OwnerWorkspace({
         </header>
 
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.9fr)", gap: "1.4rem" }}>
+          {/* TAB HỒ SƠ THỎ */}
           <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
             <span className="eyebrow" style={{ color: theme.textMuted }}>{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
             <h2 style={{ color: theme.textMain }}>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
@@ -1677,6 +1673,7 @@ function OwnerWorkspace({
             </form>
           </section>
 
+          {/* CỘT PHẢI */}
           <div>
             {studioTab === "settings" && (
               <section className="notification-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
@@ -1721,56 +1718,107 @@ function OwnerWorkspace({
               </section>
             )}
 
+            {/* TAB QUẢN LÝ VÀ CHỈNH SỬA TOÀN BỘ PLAYLIST NHẠC */}
             {studioTab === "playlist" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
-                <span className="eyebrow" style={{ color: theme.textMuted }}>playlist / la Lapine radio</span>
-                <h2 style={{ color: theme.textMain, margin: "0.3rem 0 1rem" }}>{editingTrack ? `Chỉnh sửa: ${editingTrack.title}` : "Quản lý playlist"}</h2>
-                
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                  <div>
+                    <span className="eyebrow" style={{ color: theme.textMuted }}>playlist / la Lapine radio</span>
+                    <h2 style={{ color: theme.textMain, margin: "0.2rem 0" }}>Quản lý âm thanh ({tracks.length})</h2>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={handleResetDefaultTracks}
+                    className="secondary-button" 
+                    style={{ fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMuted }}
+                  >
+                    Khôi phục 30 bài gốc
+                  </button>
+                </div>
+
+                {/* FORM CHỈNH SỬA 1 BÀI HÁT ĐANG CHỌN */}
                 {editingTrack ? (
-                  <div style={{ padding: "1rem", background: theme.inputBg, borderRadius: "8px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.2rem" }}>
-                    <label style={{ color: theme.textMuted, fontSize: "12px" }}>Tên bài hát</label>
-                    <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Nhập tên bài..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", marginTop: "4px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                    <label style={{ marginTop: ".6rem", color: theme.textMuted, fontSize: "12px", display: "block" }}>Nghệ sĩ</label>
-                    <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="la Lapine" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", marginTop: "4px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                    <label style={{ marginTop: ".6rem", color: theme.textMuted, fontSize: "12px", display: "block" }}>Thay file âm thanh mới</label>
-                    <input type="file" accept="audio/*" style={{ marginTop: "4px" }} onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const result = await uploadAsset.mutateAsync({ filename: file.name, mimeType: file.type, data: await fileToDataUrl(file) });
-                        await updateTrack.mutateAsync({ id: editingTrack.id, title: editTitle.trim(), artist: editArtist.trim() || null, audioUrl: result.url });
-                      } catch { toast.error("Không thay thế được file nhạc."); }
-                    }} />
-                    <div className="editor-actions" style={{ marginTop: "1rem" }}>
-                      <button type="button" className="primary-button" disabled={updateTrack.isPending || !editTitle.trim()} onClick={() => updateTrack.mutate({ id: editingTrack.id, title: editTitle.trim(), artist: editArtist.trim() || null, audioUrl: editingTrack.audioUrl || null })}>Lưu</button>
-                      <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ borderColor: theme.cardBorder, color: theme.textMain }}>Huỷ</button>
+                  <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
+                      <Music size={15} style={{ color: "#9ecaff" }} />
+                      <strong style={{ fontSize: "13px", color: theme.textMain }}>Đang sửa: {editingTrack.title}</strong>
                     </div>
-                  </div>
+                    <div style={{ display: "grid", gap: "0.6rem" }}>
+                      <div>
+                        <label style={{ color: theme.textMuted, fontSize: "11px" }}>Tên bài hát</label>
+                        <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                      </div>
+                      <div>
+                        <label style={{ color: theme.textMuted, fontSize: "11px" }}>Nghệ sĩ / Ca sĩ</label>
+                        <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="la Lapine" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                      </div>
+                      <div>
+                        <label style={{ color: theme.textMuted, fontSize: "11px" }}>Đường dẫn file (URL mạng hoặc /audio/ten-file.mp3)</label>
+                        <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="/audio/bai-hat.mp3" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", marginTop: "1rem" }}>
+                      <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu thay đổi</button>
+                      <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain }}>Hủy</button>
+                    </div>
+                  </form>
                 ) : (
-                  <div style={{ padding: "1.4rem", background: theme.inputBg, borderRadius: "10px", border: `1px dashed ${theme.inputBorder}`, marginBottom: "1.2rem", textAlign: "center" }}>
-                    <UploadCloud size={32} style={{ margin: "0 auto .5rem", opacity: .7, color: theme.textMain }} />
-                    <h3 style={{ margin: "0 0 .3rem", fontSize: "0.95rem", color: theme.textMain }}>Tải lên nhiều bài nhạc cùng lúc</h3>
-                    <p className="studio-help" style={{ margin: "0 0 .8rem", color: theme.textMuted, fontSize: "11.5px" }}>
-                      Chọn nhiều file (.mp3, .wav) từ máy tính. Hệ thống sẽ <b>tự động lấy tên file làm tên bài hát</b>!
-                    </p>
-                    <input type="file" accept="audio/*" multiple disabled={uploadingBatch} onChange={handleBatchUpload} style={{ display: "none" }} id="batch-audio-input" />
-                    <label htmlFor="batch-audio-input" className="primary-button" style={{ cursor: "pointer", display: "inline-flex" }}>
-                      {uploadingBatch ? (batchProgress || "Đang tải...") : "Chọn các file nhạc từ máy..."}
-                    </label>
-                  </div>
+                  /* FORM THÊM BÀI HÁT MỚI VÀO PLAYLIST */
+                  <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
+                      <Plus size={15} style={{ color: "#9ecaff" }} />
+                      <strong style={{ fontSize: "13px", color: theme.textMain }}>Thêm bài hát mới vào đĩa nhạc</strong>
+                    </div>
+                    <div style={{ display: "grid", gap: "0.6rem" }}>
+                      <div>
+                        <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                      </div>
+                      <div>
+                        <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Tên nghệ sĩ (ví dụ: Lana Del Rey)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                      </div>
+                      <div>
+                        <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn file (ví dụ: /audio/bai_hat.mp3 hoặc dán link online)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                      </div>
+                    </div>
+                    <button type="submit" className="primary-button" style={{ marginTop: "0.8rem", width: "100%", minHeight: "38px" }}>
+                      Thêm vào Playlist <ArrowUpRight size={15} />
+                    </button>
+                  </form>
                 )}
 
-                <span className="eyebrow" style={{ color: theme.textMuted }}>Danh sách bài ({(tracksQuery.data || []).length})</span>
-                <div style={{ display: "grid", gap: "0.5rem", marginTop: ".6rem", maxHeight: "320px", overflowY: "auto" }}>
-                  {(tracksQuery.data || []).map((track) => (
-                    <div key={track.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
-                      <div>
-                        <span style={{ color: theme.textMain, fontSize: "12.5px", fontWeight: 500 }}>{track.title}</span>
+                {/* DANH SÁCH TẤT CẢ CÁC BÀI HÁT TRONG PLAYLIST HIỆN TẠI */}
+                <span className="eyebrow" style={{ color: theme.textMuted }}>Danh sách bài hát ({tracks.length})</span>
+                <div style={{ display: "grid", gap: "0.5rem", marginTop: ".6rem", maxHeight: "380px", overflowY: "auto", paddingRight: "4px" }}>
+                  {tracks.map((track, index) => (
+                    <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
+                      <div style={{ minWidth: 0, paddingRight: "8px" }}>
+                        <span style={{ color: theme.textMain, fontSize: "12.5px", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          0{index + 1}. {track.title}
+                        </span>
                         <small style={{ color: theme.textMuted, display: "block", fontSize: "10.5px" }}>{track.artist || "la Lapine"}</small>
                       </div>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
-                        <button type="button" className="secondary-button danger-text" onClick={() => { if (window.confirm(`Xóa bài “${track.title}”?`)) deleteTrack.mutate({ id: track.id }); }} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                        <button 
+                          type="button" 
+                          className="secondary-button" 
+                          onClick={() => {
+                            setEditingTrack(track);
+                            setEditTitle(track.title);
+                            setEditArtist(track.artist || "");
+                            setEditUrl(track.audioUrl);
+                          }} 
+                          style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}
+                        >
+                          Sửa
+                        </button>
+                        <button 
+                          type="button" 
+                          className="secondary-button danger-text" 
+                          onClick={() => handleDeleteTrack(track)} 
+                          style={{ padding: "4px 8px", fontSize: "11px" }}
+                        >
+                          Xóa
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1788,6 +1836,7 @@ function OwnerWorkspace({
               </section>
             )}
 
+            {/* DANH MỤC THỎ TRONG CỎ */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
@@ -1926,6 +1975,7 @@ export default function Home() {
 
   const [hasEntered, setHasEntered] = useState(false);
 
+  // QUẢN LÝ DANH SÁCH THỎ LƯU TRỰC TIẾP
   const [characters, setCharacters] = useState<Character[]>(() => {
     const saved = localStorage.getItem("lalapine-custom-characters");
     return saved ? JSON.parse(saved) : fallbackCharacters;
@@ -1942,8 +1992,21 @@ export default function Home() {
     localStorage.setItem("lalapine-custom-characters", JSON.stringify(newChars));
   };
 
-  useEffect(() => 
-    { 
+  // QUẢN LÝ TOÀN BỘ PLAYLIST NHẠC LƯU TRỰC TIẾP (BẢO LƯU 30 BÀI GỐC)
+  const [tracks, setTracks] = useState<Track[]>(() => {
+    const saved = localStorage.getItem("lalapine-custom-tracks");
+    if (saved) {
+      try { return JSON.parse(saved); } catch {}
+    }
+    return defaultTracks;
+  });
+
+  const handleSaveTracks = (newTracks: Track[]) => {
+    setTracks(newTracks);
+    localStorage.setItem("lalapine-custom-tracks", JSON.stringify(newTracks));
+  };
+
+  useEffect(() => { 
     const handler = (event: KeyboardEvent) => { 
       const key = event.key.toLowerCase(); 
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { 
@@ -1971,9 +2034,15 @@ export default function Home() {
           characters={characters} 
           onClose={() => setStudio(false)} 
           onSaveCharacters={handleSaveCharacters} 
+          tracks={tracks}
+          onSaveTracks={handleSaveTracks}
         />
       ) : (
-        <PublicPage characters={characters} onStudio={() => setStudioGate(true)} />
+        <PublicPage 
+          characters={characters} 
+          onStudio={() => setStudioGate(true)} 
+          tracks={tracks}
+        />
       )}
       {studioGate && !studio && (
         <AdminGate 
