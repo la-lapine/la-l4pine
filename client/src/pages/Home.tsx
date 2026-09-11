@@ -8,6 +8,7 @@ import {
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
+import websiteData from "@/data/website_data.json";
 
 // MẬT KHẨU STUDIO DUY NHẤT
 const MASTER_PASSWORD = "jk0807";
