@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: XÓA SẠCH 100% CÁC VÒNG TRÒN ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: POPUP LOGO MƯỢT MÀ, KHÔNG CÓ BẤT KỲ GỢN SÓNG NÀO ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,55 +106,52 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
+        background: "radial-gradient(circle at 50% 50%, #0d2853 0%, #06122a 68%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "2rem",
+        padding: "1.5rem",
         textAlign: "center",
         color: "#edf5ff",
         overflow: "hidden"
       }}
     >
       <style>{`
-        /* LỆNH TIÊU DIỆT TOÀN DIỆN MỌI VÒNG TRÒN DƯ THỪA TRÊN TOÀN BỘ TRANG WEB */
-        .hero-orbit, .orbit-one, .orbit-two, .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring, .concentric-ripple,
-        [class*="orbit"], [class*="ripple"] {
-          display: none !important;
-          opacity: 0 !important;
-          animation: none !important;
-          visibility: hidden !important;
-          border: none !important;
-          box-shadow: none !important;
-          width: 0 !important;
-          height: 0 !important;
+        /* KHUNG CHỨA: Ở GIỮA CHÍNH TÂM RỒI MỚI NHÍCH LÊN */
+        @keyframes center-stage-rise {
+          0%, 52% {
+            transform: translateY(60px);
+          }
+          100% {
+            transform: translateY(0);
+          }
         }
 
-        /* CHỈ GIỮ LẠI LOGO XUẤT HIỆN ĐƠN THUẦN RẤT NỔI BẬT */
-        @keyframes clean-logo-pop {
+        /* LOGO: TỪ NHỎ ➔ PHÓNG TO CỰC ĐẠI Ở TÂM ➔ THU NHỎ LẠI */
+        @keyframes logo-expand-then-shrink {
           0% {
-            transform: scale(0.2);
+            transform: scale(0.15);
             opacity: 0;
-            filter: blur(8px);
+            filter: blur(6px);
           }
-          65% {
-            transform: scale(1.08);
+          36%, 52% {
+            transform: scale(2.4);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65));
+            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
           }
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.4));
+            filter: blur(0px) drop-shadow(0 0 18px rgba(162, 218, 255, 0.35));
           }
         }
 
-        @keyframes clean-text-fade {
+        /* NỘI DUNG HIỆN RA SAU */
+        @keyframes text-reveal-smooth {
           0% {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(8px);
           }
           100% {
             opacity: 1;
@@ -163,28 +160,37 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         }
       `}</style>
 
-      {/* VÙNG CHỨA LOGO DUY NHẤT - TUYỆT ĐỐI KHÔNG CÓ BẤT KỲ VÒNG TRÒN NÀO XUNG QUANH */}
-      <div style={{ position: "relative", width: "110px", height: "110px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
+      {/* KHUNG CHỨA DUY NHẤT: KHÔNG CÓ BẤT KỲ GỢN SÓNG HAY VÒNG TRÒN NÀO */}
+      <div style={{ 
+        position: "relative", 
+        width: "120px", 
+        height: "120px", 
+        display: "grid", 
+        placeItems: "center", 
+        marginBottom: "0.25rem", // Thu hẹp khoảng cách gần sát tên page
+        animation: "center-stage-rise 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
+        zIndex: 10 
+      }}>
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
           style={{ 
-            width: "95px", 
-            height: "95px", 
+            width: "90px", 
+            height: "90px", 
             objectFit: "contain", 
             position: "relative", 
-            zIndex: 10,
-            animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
+            zIndex: 20,
+            animation: "logo-expand-then-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
-      <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10 }}>
+      {/* TÊN PAGE, NOTE VÀ NÚT BẤM (GẦN NHAU RẤT GỌN) */}
+      <div style={{ animation: "text-reveal-smooth 1.5s ease-out 2.2s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
-          margin: "0 0 0.35rem",
+          margin: "0 0 0.2rem",
           letterSpacing: "0.04em",
           color: "#f1f8ff",
           textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
@@ -195,7 +201,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         <p style={{ 
           fontSize: "12px", 
           color: "#9db8d4", 
-          margin: "0 0 1.8rem",
+          margin: "0 0 1.4rem",
           letterSpacing: "0.08em",
           textTransform: "lowercase",
           fontFamily: '"DM Mono", monospace',
@@ -208,8 +214,8 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           className="primary-button" 
           onClick={onStart}
           style={{
-            minHeight: "46px",
-            padding: "0 2.4rem",
+            minHeight: "45px",
+            padding: "0 2.2rem",
             fontSize: "12.5px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -810,7 +816,6 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
                 </div>
               </div>
               <div className="hero-art-wrap">
-                {/* ĐÃ XÓA SẠCH CÁC THẺ HERO-ORBIT GÂY RA VÒNG TRÒN LỆCH */}
                 <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
                   {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
                   <div className="hero-art-label">
@@ -1752,6 +1757,7 @@ function OwnerWorkspace({
               </section>
             )}
 
+            {/* DANH MỤC THỎ TRONG CỎ */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
