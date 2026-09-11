@@ -102,10 +102,17 @@ const fallbackCharacters: Character[] = [
   { id: 205, slug: "mat-trang", name: "Thỏ Mặt Trăng", imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=86", caption: "Demo đang ngủ dưới vầng trăng xanh.", tagsJson: JSON.stringify(["demo", "moon", "coming soon"]), section: "coming", comingSoon: 1, favoriteCount: 0 },
 ];
 
-function tagsOf(character: Character) {
-  if (!character.tagsJson) return [];
-  try { const value = JSON.parse(character.tagsJson); return Array.isArray(value) ? value.map(String) : []; } catch { return character.tagsJson.split(",").map((tag) => tag.trim()).filter(Boolean); }
+// HÀM XỬ LÝ TAGS AN TOÀN TUYỆT ĐỐI
+function tagsOf(character?: Character | null) {
+  if (!character || !character.tagsJson) return [];
+  try { 
+    const value = JSON.parse(character.tagsJson); 
+    return Array.isArray(value) ? value.map((t) => String(t || "").trim()).filter(Boolean) : []; 
+  } catch { 
+    return String(character.tagsJson).split(",").map((tag) => tag.trim()).filter(Boolean); 
+  }
 }
+
 function visitorId() { const key = "lalapine-visitor"; const existing = localStorage.getItem(key); if (existing) return existing; const value = crypto.randomUUID(); localStorage.setItem(key, value); return value; }
 
 function sanitizeRichText(value?: string | null) {
@@ -646,7 +653,7 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    const cleanInput = password.trim().toLowerCase();
+    const cleanInput = (password || "").trim().toLowerCase();
     const cleanTarget = (character.password || "").trim().toLowerCase();
 
     if (cleanTarget) {
@@ -703,9 +710,10 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
 function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spinning, setSpinning] = useState(true);
-  const winnerIndex = useRef(Math.floor(Math.random() * pool.length));
+  const winnerIndex = useRef(Math.floor(Math.random() * (pool.length || 1)));
 
   useEffect(() => {
+    if (!pool.length) return;
     let speed = 40;
     let count = 0;
     const totalSteps = 26 + Math.floor(Math.random() * 8);
@@ -750,24 +758,24 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
           transition: "all 0.3s ease"
         }}>
           <div style={{ width: "110px", height: "110px", margin: "0 auto 0.8rem", borderRadius: "12px", overflow: "hidden", background: "#0a2851" }}>
-            {active.imageUrl ? (
+            {active?.imageUrl ? (
               <img src={active.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: spinning ? "blur(1px)" : "none" }} />
             ) : (
               <div style={{ display: "grid", placeItems: "center", height: "100%", fontSize: "2rem", color: "#a8d5ff" }}>☾</div>
             )}
           </div>
           <h2 style={{ fontSize: "1.5rem", margin: "0 0 0.3rem", color: "#f1f8ff", fontFamily: '"Playfair Display", serif' }}>
-            {active.name}
+            {active?.name || "Một người bạn"}
           </h2>
           <p style={{ fontSize: "11px", color: "#9db8d4", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {active.caption || "Một người bạn vừa tìm thấy đường về."}
+            {active?.caption || "Một người bạn vừa tìm thấy đường về."}
           </p>
         </div>
 
         <button 
           className="primary-button" 
           disabled={spinning}
-          onClick={() => onSelect(active)}
+          onClick={() => active && onSelect(active)}
           style={{ width: "100%", minHeight: "44px", marginTop: "0.5rem", opacity: spinning ? 0.6 : 1 }}
         >
           {spinning ? "Đang quay..." : "Xem thông tin chú thỏ"} <ArrowUpRight size={15} />
@@ -798,20 +806,37 @@ function PublicPage({
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   
-  const unreadCount = notifications.filter((item) => !readNotificationIds.includes(item.id)).length;
-  const latest = useMemo(() => [...characters].filter((character) => isInSection(character, "new")).sort((a, b) => b.id - a.id)[0] || characters[0], [characters]);
+  const unreadCount = notifications.filter((item) => item && !readNotificationIds.includes(item.id)).length;
+  const latest = useMemo(() => [...characters].filter((character) => character && isInSection(character, "new")).sort((a, b) => b.id - a.id)[0] || characters[0], [characters]);
   const [selected, setSelected] = useState<Character | null>(null);
   const [showSlot, setShowSlot] = useState(false);
   const [favorites, setFavorites] = useState<number[]>(() => JSON.parse(localStorage.getItem("lalapine-favorites") || "[]"));
   const [loves, setLoves] = useState<LoveSpark[]>([]);
-  const allTags = useMemo(() => Array.from(new Set(characters.flatMap(tagsOf))).sort((a, b) => a.localeCompare(b)), [characters]);
-  const visible = useMemo(() => characters.filter((character) => { const haystack = `${character.name} ${character.caption} ${tagsOf(character).join(" ")}`.toLowerCase(); return haystack.includes(query.toLowerCase()) && (!tag || tagsOf(character).includes(tag)); }), [characters, query, tag]);
+
+  // ĐÃ SỬA CHỐNG LỖI TO LOWER CASE VÀ SẮP XẾP TAGS
+  const allTags = useMemo(() => {
+    const raw = characters.flatMap((c) => tagsOf(c)).filter(Boolean);
+    return Array.from(new Set(raw)).sort((a, b) => String(a).localeCompare(String(b)));
+  }, [characters]);
+
+  // ĐÃ SỬA CHỐNG LỖI TÌM KIẾM
+  const visible = useMemo(() => characters.filter((character) => { 
+    if (!character) return false;
+    const name = String(character.name || "");
+    const caption = String(character.caption || "");
+    const tags = tagsOf(character).join(" ");
+    const haystack = `${name} ${caption} ${tags}`.toLowerCase(); 
+    const cleanQuery = String(query || "").toLowerCase().trim();
+    return haystack.includes(cleanQuery) && (!tag || tagsOf(character).includes(tag)); 
+  }), [characters, query, tag]);
+
   const newer = visible.filter((character) => isInSection(character, "new"));
-  const miracles = visible.filter((character) => isInSection(character, "featured")).sort((a, b) => a.name.localeCompare(b.name));
+  const miracles = visible.filter((character) => isInSection(character, "featured")).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || "")));
   const coming = visible.filter((character) => isInSection(character, "coming"));
   const favoriteMutation = trpc.characters.favorite.useMutation();
   
   const toggleFavorite = (character: Character) => { 
+    if (!character) return;
     const next = favorites.includes(character.id) ? favorites.filter((id) => id !== character.id) : [...favorites, character.id]; 
     setFavorites(next); 
     localStorage.setItem("lalapine-favorites", JSON.stringify(next)); 
@@ -844,7 +869,7 @@ function PublicPage({
                 <span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span>
                 <h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1>
                 <div className="hero-meta">
-                  <div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div>
+                  <div><strong>{characters.filter((character) => character && !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div>
                   <div><strong>∞</strong><span>giấc mơ</span></div>
                 </div>
               </div>
@@ -990,7 +1015,7 @@ function PublicPage({
 
 function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: NotificationItem[]; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = notifications.find((item) => item.id === selectedId);
+  const selected = notifications.find((item) => item && item.id === selectedId);
 
   return (
     <div className="modal-layer" onClick={onClose}>
@@ -1036,6 +1061,7 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
                 }}
               >
                 {notifications.map((item) => {
+                  if (!item) return null;
                   const isRead = readIds.includes(item.id);
                   return (
                     <button 
@@ -1228,15 +1254,16 @@ function OwnerWorkspace({
   const [studioTab, setStudioTab] = useState("characters");
 
   const systemAvailableTags = useMemo(() => {
-    const all = characters.flatMap(tagsOf);
-    return Array.from(new Set(all)).filter(Boolean).sort();
+    const all = characters.flatMap((c) => tagsOf(c)).filter(Boolean);
+    return Array.from(new Set(all)).sort((a, b) => String(a).localeCompare(String(b)));
   }, [characters]);
 
   const toggleTagSelection = (selectedTag: string) => {
-    const currentTags = form.tags.split(",").map(t => t.trim()).filter(Boolean);
+    const currentTags = (form.tags || "").split(",").map(t => t.trim()).filter(Boolean);
+    const target = String(selectedTag || "").toLowerCase();
     let updatedTags: string[];
-    if (currentTags.map(t => t.toLowerCase()).includes(selectedTag.toLowerCase())) {
-      updatedTags = currentTags.filter(t => t.toLowerCase() !== selectedTag.toLowerCase());
+    if (currentTags.map(t => String(t || "").toLowerCase()).includes(target)) {
+      updatedTags = currentTags.filter(t => String(t || "").toLowerCase() !== target);
     } else {
       updatedTags = [...currentTags, selectedTag];
     }
@@ -1259,7 +1286,7 @@ function OwnerWorkspace({
     let nextList: NotificationItem[];
     if (editingNotifId) {
       nextList = notifications.map(n => 
-        n.id === editingNotifId 
+        n && n.id === editingNotifId 
           ? { ...n, title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ", body: noticeBody.trim(), publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned }
           : n
       );
@@ -1286,6 +1313,7 @@ function OwnerWorkspace({
   };
 
   const handleEditNotif = (notif: NotificationItem) => {
+    if (!notif) return;
     setEditingNotifId(notif.id);
     setNoticeTitle(notif.title);
     setNoticeBody(notif.body);
@@ -1295,7 +1323,7 @@ function OwnerWorkspace({
 
   const handleDeleteNotif = (id: string) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa thông báo này?")) {
-      const nextList = notifications.filter(n => n.id !== id);
+      const nextList = notifications.filter(n => n && n.id !== id);
       onSaveNotifications(nextList);
       toast.success("Đã xóa thông báo.");
       if (editingNotifId === id) {
@@ -1386,11 +1414,11 @@ function OwnerWorkspace({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const hasPass = Boolean(form.hasPassword && form.password.trim());
-    const cleanTags = Array.from(new Set(form.tags.split(",").map((t) => t.trim()).filter(Boolean)));
+    const cleanTags = Array.from(new Set((form.tags || "").split(",").map((t) => t.trim()).filter(Boolean)));
 
     const characterData: Character = {
       id: editing ? editing.id : Date.now(),
-      slug: form.slug || form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      slug: form.slug || (form.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       name: form.name,
       caption: form.caption,
       imageUrl: form.imageUrl || null,
@@ -1618,8 +1646,8 @@ function OwnerWorkspace({
                     </small>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem" }}>
                       {systemAvailableTags.map((tagItem) => {
-                        const currentArr = form.tags.split(",").map(t => t.trim().toLowerCase());
-                        const isSelected = currentArr.includes(tagItem.toLowerCase());
+                        const currentArr = (form.tags || "").split(",").map(t => t.trim().toLowerCase());
+                        const isSelected = currentArr.includes(String(tagItem || "").toLowerCase());
                         return (
                           <button
                             key={tagItem}
@@ -1750,20 +1778,23 @@ function OwnerWorkspace({
                 <div style={{ marginTop: "1.8rem", borderTop: `1px solid ${theme.cardBorder}`, paddingTop: "1rem" }}>
                   <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử ({notifications.length})</span>
                   <div style={{ display: "grid", gap: ".5rem", marginTop: ".6rem", maxHeight: "280px", overflowY: "auto" }}>
-                    {notifications.map((item) => (
-                      <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${editingNotifId === item.id ? '#9ecaff' : theme.cardBorder}`, borderRadius: "8px", background: editingNotifId === item.id ? "rgba(173,214,255,0.15)" : theme.inputBg }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                          <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
-                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            {item.pinned && <small style={{ color: "#ffbedb", fontSize: "10px" }}>★ Đã ghim</small>}
-                            <button onClick={() => handleEditNotif(item)} style={{ background: "none", border: 0, color: theme.textMuted, cursor: "pointer", padding: "2px" }} title="Sửa"><Edit2 size={13} /></button>
-                            <button onClick={() => handleDeleteNotif(item.id)} style={{ background: "none", border: 0, color: "#e29aab", cursor: "pointer", padding: "2px" }} title="Xóa"><Trash2 size={13} /></button>
+                    {notifications.map((item) => {
+                      if (!item) return null;
+                      return (
+                        <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${editingNotifId === item.id ? '#9ecaff' : theme.cardBorder}`, borderRadius: "8px", background: editingNotifId === item.id ? "rgba(173,214,255,0.15)" : theme.inputBg }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                            <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              {item.pinned && <small style={{ color: "#ffbedb", fontSize: "10px" }}>★ Đã ghim</small>}
+                              <button onClick={() => handleEditNotif(item)} style={{ background: "none", border: 0, color: theme.textMuted, cursor: "pointer", padding: "2px" }} title="Sửa"><Edit2 size={13} /></button>
+                              <button onClick={() => handleDeleteNotif(item.id)} style={{ background: "none", border: 0, color: "#e29aab", cursor: "pointer", padding: "2px" }} title="Xóa"><Trash2 size={13} /></button>
+                            </div>
                           </div>
+                          <p style={{ margin: ".25rem 0", color: theme.textMuted, fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
+                          <small style={{ color: theme.textMuted, fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
                         </div>
-                        <p style={{ margin: ".25rem 0", color: theme.textMuted, fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
-                        <small style={{ color: theme.textMuted, fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </section>
@@ -1982,7 +2013,7 @@ function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Char
   return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character.name}?</h2><p>Hồ sơ sẽ rời khỏi đồng cỏ. Bạn có chắc muốn tiếp tục không?</p><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa hồ sơ</button></div></div></div>;
 }
 
-// ==================== COMPONENT CHÍNH (ĐỒNG BỘ SUPABASE) ====================
+// ==================== COMPONENT CHÍNH ====================
 export default function Home() {
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
@@ -2020,7 +2051,7 @@ export default function Home() {
     localStorage.setItem("lalapine-read-notifications", JSON.stringify(next));
   };
 
-  // FETCH DỮ LIỆU TỪ SUPABASE KHI MỞ WEB
+  // FETCH DỮ LIỆU TỪ SUPABASE
   useEffect(() => {
     async function loadCloudData() {
       try {
