@@ -744,7 +744,7 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
           padding: "1rem",
           borderRadius: "16px",
           background: "linear-gradient(180deg, rgba(8, 25, 52, 0.95), rgba(4, 15, 33, 0.95))",
-          border: spinning ? "1.5px solid #a8d5ff" : "1.5px solid #ffd166",
+          border: spinning ? "1.5px solid #a8d5ff" : "1.5px solid #dbeeff",
           boxShadow: spinning ? "0 0 25px rgba(168, 213, 255, 0.3)" : "0 0 35px rgba(255, 209, 102, 0.45)",
           transition: "all 0.3s ease"
         }}>
@@ -759,7 +759,7 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
             {active.name}
           </h2>
           <p style={{ fontSize: "11px", color: "#9db8d4", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {active.caption || "Một người bạn vừa tìm thấy đường về."}
+            {active.caption || "Một bạn thỏ vừa tìm thấy đường về."}
           </p>
         </div>
 
@@ -824,7 +824,7 @@ function PublicPage({ characters, onStudio, tracks }: { characters: Character[];
             <section className="hero-section">
               <div className="hero-copy">
                 <span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span>
-                <h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1>
+                <h1>để hồn ta đi tìm<br /><i>nơi nó thuộc về.</i></h1>
                 <div className="hero-meta">
                   <div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div>
                   <div><strong>∞</strong><span>giấc mơ</span></div>
@@ -836,7 +836,7 @@ function PublicPage({ characters, onStudio, tracks }: { characters: Character[];
                   <div className="hero-art-label">
                     <span>mới ra gần đây / field 01</span>
                     <strong>{latest?.name || "Một chú thỏ mới"}</strong>
-                    <small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small>
+                    <small>{latest?.caption || "Một bạn thỏ vừa tìm thấy đường về."}</small>
                   </div>
                 </div>
               </div>
