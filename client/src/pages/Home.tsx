@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
-  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sun, Moon, Music, Plus 
+  Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, UploadCloud, ChevronRight, Lock, Tag, Sun, Moon 
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -50,7 +50,7 @@ type LoveSpark = { id: number; x: number; y: number; rotation: number; particles
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
 const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
 
-// DANH SÁCH 30 BÀI HÁT GỐC BAN ĐẦU
+// Danh sách nhạc mặc định
 const defaultTracks: Track[] = [
   { id: 1, title: "southbound", artist: "Artemas", audioUrl: "/audio/Artemas - southbound (official visualizer) - Artemas.mp3" },
   { id: 2, title: "Gimme More", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3" },
@@ -87,9 +87,6 @@ const defaultTracks: Track[] = [
 const fallbackCharacters: Character[] = [
   { id: 201, slug: "mup-sua", name: "Thỏ Múp Sữa", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=86", caption: "Một chiếc bánh sữa mềm đi lạc vào đồng cỏ xanh.", tagsJson: JSON.stringify(["mới ra lò", "mềm", "ấm áp"]), externalUrl: "https://character.ai/", description: "Múp Sữa thích những buổi chiều có nắng nhạt và một chiếc khăn len vừa đủ ấm.", backstory: "Bạn ấy được tìm thấy trong một hộp sữa rỗng, bên cạnh một bông cỏ bốn lá.", firstMessage: "Bạn có muốn chia đôi chiếc bánh này không?", section: "new", favoriteCount: 128 },
   { id: 202, slug: "ky-tich-a", name: "Thỏ Kỳ Tích Aster", imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=86", caption: "Người giữ những điều nhỏ bé nhưng không thể giải thích.", tagsJson: JSON.stringify(["kỳ tích", "a-z", "phiêu lưu"]), externalUrl: "https://character.ai/", description: "Aster luôn xuất hiện trước một khoảnh khắc kỳ diệu, như thể bạn ấy đã biết từ lâu.", backstory: "Trong cuốn sổ của Aster có tên của mọi người từng tin vào điều không thể.", firstMessage: "Mình nghĩ hôm nay có thể xảy ra một điều rất đẹp.", section: "featured", featured: 1, favoriteCount: 246 },
-  { id: 203, slug: "ky-tich-b", name: "Thỏ Kỳ Tích Beryl", imageUrl: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=86", caption: "Cô thủ thư gom những phép màu vào từng trang sách.", tagsJson: JSON.stringify(["kỳ tích", "bookish", "quiet"]), externalUrl: "https://character.ai/", description: "Beryl biết cuốn sách nào sẽ tìm thấy bạn trước khi bạn biết mình đang cần nó.", backstory: "Beryl mở một thư viện chỉ dành cho những người đang đứng trước ngã rẽ.", firstMessage: "Mình đã đánh dấu trang này cho bạn rồi.", section: "featured", featured: 1, favoriteCount: 89 },
-  { id: 204, slug: "ky-tich-c", name: "Thỏ Kỳ Tích Ciel", imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=86", caption: "Một kẻ lữ hành mang theo túi hạt giống ánh sáng.", tagsJson: JSON.stringify(["kỳ tích", "adventure", "blue hour"]), externalUrl: "https://character.ai/", description: "Ciel đi qua những cánh đồng chưa có trên bản đồ và gieo ánh sáng ở nơi bạn ấy dừng chân.", backstory: "Mỗi hạt giống trong túi là một lời hứa được giữ lại từ mùa hè cũ.", firstMessage: "Bạn muốn đi cùng mình đến nơi nào trước?", section: "featured", featured: 1, favoriteCount: 174 },
-  { id: 205, slug: "mat-trang", name: "Thỏ Mặt Trăng", imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=86", caption: "Demo đang ngủ dưới vầng trăng xanh.", tagsJson: JSON.stringify(["demo", "moon", "coming soon"]), section: "coming", comingSoon: 1, favoriteCount: 0 },
 ];
 
 function tagsOf(character: Character) {
@@ -111,7 +108,16 @@ function sanitizeRichText(value?: string | null) {
 }
 function renderRichText(value?: string | null) { return sanitizeRichText(value) || "Nội dung đang được gieo mầm."; }
 async function fileToDataUrl(file: File) { return await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); }); }
-function encodeStorageUrl(value?: string | null) { if (!value || !value.startsWith("/manus-storage/")) return value || undefined; const key = value.slice("/manus-storage/".length); return `/manus-storage/${key.split("/").map((part) => encodeURIComponent(decodeURIComponent(part))).join("/")}`; }
+
+// ĐÃ SỬA LỖI MÃ HÓA ĐỂ ĐỌC ĐƯỢC BÀI HÁT CÓ DẤU CÁCH VÀ KÝ TỰ ĐẶC BIỆT
+function encodeStorageUrl(value?: string | null) { 
+  if (!value) return undefined;
+  if (value.startsWith("/manus-storage/")) {
+    const key = value.slice("/manus-storage/".length); 
+    return `/manus-storage/${key.split("/").map((part) => encodeURIComponent(decodeURIComponent(part))).join("/")}`; 
+  }
+  return encodeURI(value);
+}
 
 function SparklesLayer() {
   const [particles] = useState(() => Array.from({ length: 36 }, (_, index) => ({ id: index, x: Math.random() * 100, duration: 7 + Math.random() * 9, delay: -(Math.random() * 14), drift: -90 + Math.random() * 180, size: .7 + Math.random() * 1.4, tilt: -35 + Math.random() * 70 })));
@@ -140,7 +146,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
+        background: "radial-gradient(circle at 50% 50%, #0c254a 0%, #06122a 65%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -152,60 +158,79 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
+        /* KHẮC PHỤC LỖI VÒNG TRÒN THỪA CỦA CSS CŨ */
+        .intro-layer, .intro-ripple, .intro-center, .intro-foot {
           display: none !important;
           opacity: 0 !important;
           animation: none !important;
           visibility: hidden !important;
         }
 
-        @keyframes clean-logo-appear {
-          0% {
-            transform: scale(0.25);
-            opacity: 0;
-            filter: blur(8px);
-          }
-          65% {
-            transform: scale(1.08);
-            opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65));
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.45));
-          }
+        @keyframes center-stage-motion {
+          0%, 55% { transform: translateY(40px); }
+          100% { transform: translateY(0); }
         }
 
-        @keyframes clean-text-appear {
-          0% {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes logo-expand-shrink {
+          0% { transform: scale(0.12); opacity: 0; filter: blur(6px); }
+          38% { transform: scale(2.4); opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7)); }
+          58% { transform: scale(2.4); opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7)); }
+          100% { transform: scale(1); opacity: 1; filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.35)); }
+        }
+
+        @keyframes ripple-from-logo-center {
+          0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0.45; }
+          40% { opacity: 0.22; }
+          100% { transform: translate(-50%, -50%) scale(5.8); opacity: 0; }
+        }
+
+        @keyframes intro-content-fade {
+          0% { opacity: 0; transform: translateY(12px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .concentric-ripple {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          border: 1px solid rgba(173, 214, 255, 0.28);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.06) 0%, transparent 70%);
+          box-shadow: 0 0 16px rgba(142, 208, 255, 0.15);
+          pointer-events: none;
         }
       `}</style>
 
-      <div style={{ position: "relative", width: "120px", height: "120px", display: "grid", placeItems: "center", marginBottom: "1rem", zIndex: 10 }}>
+      <div style={{ 
+        position: "relative", 
+        width: "140px", 
+        height: "140px", 
+        display: "grid", 
+        placeItems: "center", 
+        marginBottom: "0.8rem",
+        animation: "center-stage-motion 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
+        zIndex: 10 
+      }}>
+        <div className="concentric-ripple" style={{ animation: "ripple-from-logo-center 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 0.6s" }} />
+        <div className="concentric-ripple" style={{ animation: "ripple-from-logo-center 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.4s" }} />
+
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
           style={{ 
-            width: "95px", 
-            height: "95px", 
+            width: "90px", 
+            height: "90px", 
             objectFit: "contain", 
             position: "relative", 
-            zIndex: 10,
-            animation: "clean-logo-appear 1.6s cubic-bezier(0.2, 1, 0.3, 1) both"
+            zIndex: 20,
+            animation: "logo-expand-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      <div style={{ animation: "clean-text-appear 1.4s ease-out 0.6s both", zIndex: 10 }}>
+      <div style={{ animation: "intro-content-fade 1.5s ease-out 2.2s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
@@ -234,7 +259,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           style={{
             minHeight: "46px",
-            padding: "0 2.4rem",
+            padding: "0 2.2rem",
             fontSize: "12.5px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -250,7 +275,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-// ==================== MUSIC PLAYER (ĐỒNG BỘ TRỰC TIẾP VỚI STUDIO) ====================
+// ==================== MUSIC PLAYER ====================
 function MusicPlayer({ tracks }: { tracks: Track[] }) {
   const [expanded, setExpanded] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -635,7 +660,6 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
   );
 }
 
-// ==================== KHUNG MỞ KHÓA LIÊN KẾT CHO KHÁCH ====================
 function AccessModal({ character, onClose, onSuccess }: { character: Character; onClose: () => void; onSuccess: (url: string) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -698,7 +722,6 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   );
 }
 
-// ==================== HIỆU ỨNG QUAY SLOT CASINO ====================
 function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spinning, setSpinning] = useState(true);
@@ -744,7 +767,7 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
           padding: "1rem",
           borderRadius: "16px",
           background: "linear-gradient(180deg, rgba(8, 25, 52, 0.95), rgba(4, 15, 33, 0.95))",
-          border: spinning ? "1.5px solid #a8d5ff" : "1.5px solid #dbeeff",
+          border: spinning ? "1.5px solid #a8d5ff" : "1.5px solid #ffd166",
           boxShadow: spinning ? "0 0 25px rgba(168, 213, 255, 0.3)" : "0 0 35px rgba(255, 209, 102, 0.45)",
           transition: "all 0.3s ease"
         }}>
@@ -759,7 +782,7 @@ function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSel
             {active.name}
           </h2>
           <p style={{ fontSize: "11px", color: "#9db8d4", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {active.caption || "Một bạn thỏ vừa tìm thấy đường về."}
+            {active.caption || "Một người bạn vừa tìm thấy đường về."}
           </p>
         </div>
 
@@ -824,19 +847,21 @@ function PublicPage({ characters, onStudio, tracks }: { characters: Character[];
             <section className="hero-section">
               <div className="hero-copy">
                 <span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span>
-                <h1>để hồn ta đi tìm<br /><i>nơi nó thuộc về.</i></h1>
+                <h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1>
                 <div className="hero-meta">
                   <div><strong>{characters.filter((character) => !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div>
                   <div><strong>∞</strong><span>giấc mơ</span></div>
                 </div>
               </div>
               <div className="hero-art-wrap">
+                <div className="hero-orbit orbit-one" />
+                <div className="hero-orbit orbit-two" />
                 <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
                   {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
                   <div className="hero-art-label">
                     <span>mới ra gần đây / field 01</span>
                     <strong>{latest?.name || "Một chú thỏ mới"}</strong>
-                    <small>{latest?.caption || "Một bạn thỏ vừa tìm thấy đường về."}</small>
+                    <small>{latest?.caption || "Một người bạn vừa tìm thấy đường về."}</small>
                   </div>
                 </div>
               </div>
@@ -1075,7 +1100,6 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
   );
 }
 
-// BỘ SOẠN THẢO TRONG STUDIO
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   useEffect(() => { 
@@ -1121,7 +1145,6 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
-// ==================== KHUNG NHẬP MẬT KHẨU STUDIO ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -1161,7 +1184,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   );
 }
 
-// ==================== WORKSPACE STUDIO: QUẢN LÝ VÀ CHỈNH SỬA TOÀN BỘ PLAYLIST NHẠC ====================
+// ==================== WORKSPACE (HỖ TRỢ SỬA & XÓA THÔNG BÁO) ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
@@ -1206,12 +1229,9 @@ function OwnerWorkspace({
   const [editing, setEditing] = useState<Character | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [form, setForm] = useState(blank);
-  const [noticeTitle, setNoticeTitle] = useState("Một lời nhắn từ đồng cỏ");
-  const [noticeBody, setNoticeBody] = useState("");
-  const [noticePublishedAt, setNoticePublishedAt] = useState("");
-  const [noticePinned, setNoticePinned] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Character | null>(null);
   const [studioTab, setStudioTab] = useState("characters");
+  const uploadAsset = trpc.owner.uploadAsset.useMutation();
 
   const systemAvailableTags = useMemo(() => {
     const all = characters.flatMap(tagsOf);
@@ -1229,78 +1249,17 @@ function OwnerWorkspace({
     setForm({ ...form, tags: updatedTags.join(", ") });
   };
 
+  // --- NOTIFICATION STATE ---
+  const [noticeTitle, setNoticeTitle] = useState("Một lời nhắn từ đồng cỏ");
+  const [noticeBody, setNoticeBody] = useState("");
+  const [noticePublishedAt, setNoticePublishedAt] = useState("");
+  const [noticePinned, setNoticePinned] = useState(false);
+  const [editingNotifId, setEditingNotifId] = useState<string | null>(null);
+
   const [pastNotifications, setPastNotifications] = useState<Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>>(() => {
     const saved = localStorage.getItem("lalapine-custom-notifications");
     return saved ? JSON.parse(saved) : [];
   });
-
-  // ==================== QUẢN LÝ PLAYLIST TRỰC TIẾP ====================
-  const [editingTrack, setEditingTrack] = useState<Track | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editArtist, setEditArtist] = useState("");
-  const [editUrl, setEditUrl] = useState("");
-
-  // Form thêm bài hát mới
-  const [newTitle, setNewTitle] = useState("");
-  const [newArtist, setNewArtist] = useState("");
-  const [newUrl, setNewUrl] = useState("");
-
-  // LƯU THAY ĐỔI 1 BÀI HÁT
-  const handleUpdateTrack = (e: FormEvent) => {
-    e.preventDefault();
-    if (!editingTrack || !editTitle.trim() || !editUrl.trim()) return;
-
-    const nextTracks = tracks.map((t) => 
-      t.id === editingTrack.id 
-        ? { ...t, title: editTitle.trim(), artist: editArtist.trim() || "la Lapine", audioUrl: editUrl.trim() } 
-        : t
-    );
-    onSaveTracks(nextTracks);
-    toast.success(`Đã cập nhật bài "${editTitle.trim()}"!`);
-    setEditingTrack(null);
-  };
-
-  // THÊM BÀI HÁT MỚI VÀO PLAYLIST
-  const handleAddNewTrack = (e: FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !newUrl.trim()) {
-      toast.error("Vui lòng nhập tên bài hát và đường dẫn âm thanh.");
-      return;
-    }
-
-    const newTrackItem: Track = {
-      id: Date.now(),
-      title: newTitle.trim(),
-      artist: newArtist.trim() || "la Lapine",
-      audioUrl: newUrl.trim()
-    };
-
-    const nextTracks = [...tracks, newTrackItem];
-    onSaveTracks(nextTracks);
-    toast.success(`Đã thêm bài "${newTitle.trim()}" vào playlist!`);
-    setNewTitle("");
-    setNewArtist("");
-    setNewUrl("");
-  };
-
-  // XÓA BÀI HÁT KHỎI PLAYLIST
-  const handleDeleteTrack = (trackToDelete: Track) => {
-    if (window.confirm(`Xóa bài "${trackToDelete.title}" khỏi danh sách phát?`)) {
-      const nextTracks = tracks.filter((t) => t.id !== trackToDelete.id);
-      onSaveTracks(nextTracks);
-      toast.success(`Đã xóa bài "${trackToDelete.title}".`);
-      if (editingTrack?.id === trackToDelete.id) setEditingTrack(null);
-    }
-  };
-
-  // KHÔI PHỤC 30 BÀI MẶC ĐỊNH
-  const handleResetDefaultTracks = () => {
-    if (window.confirm("Khôi phục danh sách về 30 bài hát gốc mặc định?")) {
-      onSaveTracks(defaultTracks);
-      toast.success("Đã khôi phục 30 bài hát mặc định!");
-      setEditingTrack(null);
-    }
-  };
 
   const handleSendNotification = () => {
     if (!noticeBody.trim()) {
@@ -1308,23 +1267,100 @@ function OwnerWorkspace({
       return;
     }
 
-    const newNotif = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ",
-      body: noticeBody.trim(),
-      publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(),
-      pinned: noticePinned
-    };
+    let nextList;
+    if (editingNotifId) {
+      nextList = pastNotifications.map(n => 
+        n.id === editingNotifId 
+          ? { ...n, title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ", body: noticeBody.trim(), publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned }
+          : n
+      );
+      toast.success("Cập nhật thông báo thành công!");
+    } else {
+      const newNotif = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ",
+        body: noticeBody.trim(),
+        publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(),
+        pinned: noticePinned
+      };
+      nextList = [newNotif, ...pastNotifications];
+      toast.success("Gửi thông báo thành công!");
+    }
 
-    const nextList = [newNotif, ...pastNotifications];
     setPastNotifications(nextList);
     localStorage.setItem("lalapine-custom-notifications", JSON.stringify(nextList));
 
-    toast.success("Gửi thành công!");
     setNoticeTitle("Một lời nhắn từ đồng cỏ");
     setNoticeBody("");
     setNoticePublishedAt("");
     setNoticePinned(false);
+    setEditingNotifId(null);
+  };
+
+  const handleDeleteNotification = (id: string) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa thông báo này?")) {
+      const nextList = pastNotifications.filter(n => n.id !== id);
+      setPastNotifications(nextList);
+      localStorage.setItem("lalapine-custom-notifications", JSON.stringify(nextList));
+      toast.success("Đã xóa thông báo.");
+      if (editingNotifId === id) {
+        setNoticeTitle("Một lời nhắn từ đồng cỏ");
+        setNoticeBody("");
+        setNoticePublishedAt("");
+        setNoticePinned(false);
+        setEditingNotifId(null);
+      }
+    }
+  };
+
+  // --- PLAYLIST STATE ---
+  const [uploadingBatch, setUploadingBatch] = useState(false);
+  const [batchProgress, setBatchProgress] = useState("");
+  const [editingTrack, setEditingTrack] = useState<Track | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editArtist, setEditArtist] = useState("");
+  const [editUrl, setEditUrl] = useState("");
+
+  const handleUpdateTrack = (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingTrack || !editTitle.trim() || !editUrl.trim()) return;
+    const nextTracks = tracks.map((t) => t.id === editingTrack.id ? { ...t, title: editTitle.trim(), artist: editArtist.trim() || "la Lapine", audioUrl: editUrl.trim() } : t);
+    onSaveTracks(nextTracks);
+    toast.success(`Đã cập nhật bài "${editTitle.trim()}"!`);
+    setEditingTrack(null);
+  };
+
+  const handleBatchUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingBatch(true);
+    const fileList = Array.from(files);
+    let successCount = 0;
+    const newTracks: Track[] = [];
+
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      const autoTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ").trim();
+      setBatchProgress(`Đang tải (${i + 1}/${fileList.length}): ${autoTitle}`);
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        const result = await uploadAsset.mutateAsync({ filename: file.name, mimeType: file.type || "audio/mpeg", data: dataUrl });
+        newTracks.push({ id: Date.now() + i, title: autoTitle || "Bản nhạc mới", artist: "la Lapine", audioUrl: result.url });
+        successCount++;
+      } catch (err) {
+        console.error("Lỗi tải file:", err);
+      }
+    }
+
+    if (successCount > 0) {
+      onSaveTracks([...tracks, ...newTracks]);
+      toast.success(`Đã thêm thành công ${successCount} bài nhạc!`);
+    } else {
+      toast.error("Không thể tải bài nhạc lên lúc này.");
+    }
+    setUploadingBatch(false);
+    setBatchProgress("");
+    event.target.value = "";
   };
 
   const reset = () => { setEditing(null); setForm(blank); };
@@ -1673,12 +1709,15 @@ function OwnerWorkspace({
             </form>
           </section>
 
-          {/* CỘT PHẢI */}
           <div>
+            {/* TAB THÔNG BÁO CHO ADMIN (HỖ TRỢ SỬA XÓA) */}
             {studioTab === "settings" && (
               <section className="notification-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <span className="eyebrow" style={{ color: theme.textMuted }}>broadcast / all visitors</span>
-                <h3 style={{ color: theme.textMain, margin: "0.3rem 0 1rem" }}>Gửi thông báo mới</h3>
+                <h3 style={{ color: theme.textMain, margin: "0.3rem 0 1rem" }}>
+                  {editingNotifId ? "Sửa thông báo" : "Gửi thông báo mới"}
+                </h3>
+                
                 <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề thông báo" style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                 <textarea rows={4} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Viết lời nhắn mà mọi người trong đồng cỏ sẽ thấy…" style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                 
@@ -1691,26 +1730,76 @@ function OwnerWorkspace({
                   <input type="checkbox" checked={noticePinned} onChange={(event) => setNoticePinned(event.target.checked)} style={{ width: "16px", height: "16px", accentColor: "#3a86ff" }} /> Ghim thông báo lên đầu
                 </label>
 
-                <button 
-                  className="primary-button" 
-                  style={{ width: "100%", minHeight: "42px" }}
-                  disabled={!noticeBody.trim()} 
-                  onClick={handleSendNotification}
-                >
-                  Gửi thông báo <Bell size={15} />
-                </button>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button 
+                    className="primary-button" 
+                    style={{ flex: 1, minHeight: "42px" }}
+                    disabled={!noticeBody.trim()} 
+                    onClick={handleSendNotification}
+                  >
+                    {editingNotifId ? "Cập nhật thông báo" : "Gửi thông báo"} <Bell size={15} />
+                  </button>
+                  {editingNotifId && (
+                    <button 
+                      className="secondary-button" 
+                      onClick={() => {
+                        setEditingNotifId(null);
+                        setNoticeTitle("Một lời nhắn từ đồng cỏ");
+                        setNoticeBody("");
+                        setNoticePublishedAt("");
+                        setNoticePinned(false);
+                      }}
+                      style={{ borderColor: theme.cardBorder, color: theme.textMain, minHeight: "42px" }}
+                    >
+                      Hủy sửa
+                    </button>
+                  )}
+                </div>
 
+                {/* XEM, SỬA, XÓA LỊCH SỬ THÔNG BÁO CŨ */}
                 <div style={{ marginTop: "1.8rem", borderTop: `1px solid ${theme.cardBorder}`, paddingTop: "1rem" }}>
                   <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử ({pastNotifications.length})</span>
-                  <div style={{ display: "grid", gap: ".5rem", marginTop: ".6rem", maxHeight: "280px", overflowY: "auto" }}>
+                  <div style={{ display: "grid", gap: ".5rem", marginTop: ".6rem", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}>
                     {pastNotifications.map((item) => (
-                      <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${theme.cardBorder}`, borderRadius: "8px", background: theme.inputBg }}>
+                      <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${theme.cardBorder}`, borderRadius: "8px", background: editingNotifId === item.id ? "rgba(173,214,255,.15)" : theme.inputBg }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                           <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
                           {item.pinned && <small style={{ color: "#ffbedb" }}>★ Đã ghim</small>}
                         </div>
                         <p style={{ margin: ".25rem 0", color: theme.textMuted, fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
-                        <small style={{ color: theme.textMuted, fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
+                        
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                          <small style={{ color: theme.textMuted, fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button 
+                              type="button" 
+                              className="secondary-button" 
+                              style={{ padding: "3px 8px", fontSize: "10.5px", minHeight: "0", borderColor: theme.cardBorder, color: theme.textMain }}
+                              onClick={() => {
+                                setEditingNotifId(item.id);
+                                setNoticeTitle(item.title);
+                                setNoticeBody(item.body);
+                                setNoticePinned(item.pinned);
+                                // Format date for input datetime-local if exists
+                                if (item.publishedAt) {
+                                  const d = new Date(item.publishedAt);
+                                  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                                  setNoticePublishedAt(d.toISOString().slice(0, 16));
+                                }
+                              }}
+                            >
+                              Sửa
+                            </button>
+                            <button 
+                              type="button" 
+                              className="secondary-button danger-text" 
+                              style={{ padding: "3px 8px", fontSize: "10.5px", minHeight: "0" }}
+                              onClick={() => handleDeleteNotification(item.id)}
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1718,7 +1807,7 @@ function OwnerWorkspace({
               </section>
             )}
 
-            {/* TAB QUẢN LÝ VÀ CHỈNH SỬA TOÀN BỘ PLAYLIST NHẠC */}
+            {/* TAB PLAYLIST */}
             {studioTab === "playlist" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -1736,11 +1825,9 @@ function OwnerWorkspace({
                   </button>
                 </div>
 
-                {/* FORM CHỈNH SỬA 1 BÀI HÁT ĐANG CHỌN */}
                 {editingTrack ? (
                   <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
-                      <Music size={15} style={{ color: "#9ecaff" }} />
                       <strong style={{ fontSize: "13px", color: theme.textMain }}>Đang sửa: {editingTrack.title}</strong>
                     </div>
                     <div style={{ display: "grid", gap: "0.6rem" }}>
@@ -1763,10 +1850,8 @@ function OwnerWorkspace({
                     </div>
                   </form>
                 ) : (
-                  /* FORM THÊM BÀI HÁT MỚI VÀO PLAYLIST */
                   <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
-                      <Plus size={15} style={{ color: "#9ecaff" }} />
                       <strong style={{ fontSize: "13px", color: theme.textMain }}>Thêm bài hát mới vào đĩa nhạc</strong>
                     </div>
                     <div style={{ display: "grid", gap: "0.6rem" }}>
@@ -1777,7 +1862,7 @@ function OwnerWorkspace({
                         <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Tên nghệ sĩ (ví dụ: Lana Del Rey)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                       </div>
                       <div>
-                        <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn file (ví dụ: /audio/bai_hat.mp3 hoặc dán link online)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                        <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn (ví dụ: /audio/bai_hat.mp3)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                       </div>
                     </div>
                     <button type="submit" className="primary-button" style={{ marginTop: "0.8rem", width: "100%", minHeight: "38px" }}>
@@ -1786,7 +1871,6 @@ function OwnerWorkspace({
                   </form>
                 )}
 
-                {/* DANH SÁCH TẤT CẢ CÁC BÀI HÁT TRONG PLAYLIST HIỆN TẠI */}
                 <span className="eyebrow" style={{ color: theme.textMuted }}>Danh sách bài hát ({tracks.length})</span>
                 <div style={{ display: "grid", gap: "0.5rem", marginTop: ".6rem", maxHeight: "380px", overflowY: "auto", paddingRight: "4px" }}>
                   {tracks.map((track, index) => (
@@ -1798,27 +1882,8 @@ function OwnerWorkspace({
                         <small style={{ color: theme.textMuted, display: "block", fontSize: "10.5px" }}>{track.artist || "la Lapine"}</small>
                       </div>
                       <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                        <button 
-                          type="button" 
-                          className="secondary-button" 
-                          onClick={() => {
-                            setEditingTrack(track);
-                            setEditTitle(track.title);
-                            setEditArtist(track.artist || "");
-                            setEditUrl(track.audioUrl);
-                          }} 
-                          style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}
-                        >
-                          Sửa
-                        </button>
-                        <button 
-                          type="button" 
-                          className="secondary-button danger-text" 
-                          onClick={() => handleDeleteTrack(track)} 
-                          style={{ padding: "4px 8px", fontSize: "11px" }}
-                        >
-                          Xóa
-                        </button>
+                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); setEditUrl(track.audioUrl); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
+                        <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
                       </div>
                     </div>
                   ))}
@@ -1975,7 +2040,6 @@ export default function Home() {
 
   const [hasEntered, setHasEntered] = useState(false);
 
-  // QUẢN LÝ DANH SÁCH THỎ LƯU TRỰC TIẾP
   const [characters, setCharacters] = useState<Character[]>(() => {
     const saved = localStorage.getItem("lalapine-custom-characters");
     return saved ? JSON.parse(saved) : fallbackCharacters;
@@ -1992,7 +2056,6 @@ export default function Home() {
     localStorage.setItem("lalapine-custom-characters", JSON.stringify(newChars));
   };
 
-  // QUẢN LÝ TOÀN BỘ PLAYLIST NHẠC LƯU TRỰC TIẾP (BẢO LƯU 30 BÀI GỐC)
   const [tracks, setTracks] = useState<Track[]>(() => {
     const saved = localStorage.getItem("lalapine-custom-tracks");
     if (saved) {
