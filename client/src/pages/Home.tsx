@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: POPUP LOGO MƯỢT MÀ, KHÔNG CÓ BẤT KỲ GỢN SÓNG NÀO ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: SÓNG & LOGO ĐỒNG TÂM 100%, PHÓNG TO RỒI THU NHỎ ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -111,31 +111,36 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "1.5rem",
+        padding: "2rem",
         textAlign: "center",
         color: "#edf5ff",
         overflow: "hidden"
       }}
     >
       <style>{`
-        /* KHUNG CHỨA: Ở GIỮA CHÍNH TÂM RỒI MỚI NHÍCH LÊN */
-        @keyframes center-stage-rise {
-          0%, 52% {
-            transform: translateY(60px);
+        /* KHỐI TRUNG TÂM CHỨA CẢ LOGO VÀ SÓNG: DI CHUYỂN TỪ TÂM MÀN HÌNH LÊN VỊ TRÍ CHUẨN */
+        @keyframes center-stage-motion {
+          0%, 55% {
+            transform: translateY(40px);
           }
           100% {
             transform: translateY(0);
           }
         }
 
-        /* LOGO: TỪ NHỎ ➔ PHÓNG TO CỰC ĐẠI Ở TÂM ➔ THU NHỎ LẠI */
-        @keyframes logo-expand-then-shrink {
+        /* LOGO: TỪ NHỎ PHÓNG TO CỰC ĐẠI Ở TÂM, RỒI THU NHỎ LẠI */
+        @keyframes logo-expand-shrink {
           0% {
-            transform: scale(0.15);
+            transform: scale(0.12);
             opacity: 0;
             filter: blur(6px);
           }
-          36%, 52% {
+          38% {
+            transform: scale(2.4);
+            opacity: 1;
+            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
+          }
+          58% {
             transform: scale(2.4);
             opacity: 1;
             filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
@@ -143,34 +148,67 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 18px rgba(162, 218, 255, 0.35));
+            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.35));
           }
         }
 
-        /* NỘI DUNG HIỆN RA SAU */
-        @keyframes text-reveal-smooth {
+        /* GỢN SÓNG: PHÁT RA CHÍNH XÁC TỪ TÂM CỦA LOGO, LAN CỰC RỘNG VÀ MỎNG NHẸ */
+        @keyframes ripple-from-logo-center {
+          0% {
+            transform: translate(-50%, -50%) scale(0.4);
+            opacity: 0.45;
+          }
+          40% {
+            opacity: 0.22;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(5.8);
+            opacity: 0;
+          }
+        }
+
+        /* CHỮ VÀ NÚT XUẤT HIỆN SAU KHI LOGO ĐÃ THU NHỎ XONG */
+        @keyframes intro-content-fade {
           0% {
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(12px);
           }
           100% {
             opacity: 1;
             transform: translateY(0);
           }
         }
+
+        .concentric-ripple {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          border: 1px solid rgba(173, 214, 255, 0.28);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.06) 0%, transparent 70%);
+          box-shadow: 0 0 16px rgba(142, 208, 255, 0.15);
+          pointer-events: none;
+        }
       `}</style>
 
-      {/* KHUNG CHỨA DUY NHẤT: KHÔNG CÓ BẤT KỲ GỢN SÓNG HAY VÒNG TRÒN NÀO */}
+      {/* KHỐI MẸ ĐỒNG TÂM: CHỨA CẢ SÓNG VÀ LOGO KHÔNG THỂ BỊ LỆCH */}
       <div style={{ 
         position: "relative", 
-        width: "120px", 
-        height: "120px", 
+        width: "140px", 
+        height: "140px", 
         display: "grid", 
         placeItems: "center", 
-        marginBottom: "0.25rem", // Thu hẹp khoảng cách gần sát tên page
-        animation: "center-stage-rise 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
+        marginBottom: "0.8rem",
+        animation: "center-stage-motion 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
         zIndex: 10 
       }}>
+        {/* 2 Vòng sóng phát ra trực tiếp từ tâm điểm logo, lan tỏa rộng khắp màn hình */}
+        <div className="concentric-ripple" style={{ animation: "ripple-from-logo-center 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 0.6s" }} />
+        <div className="concentric-ripple" style={{ animation: "ripple-from-logo-center 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.4s" }} />
+
+        {/* LOGO PHÓNG TO RỒI THU NHỎ NẰM ĐÈ LÊN TÂM SÓNG */}
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
@@ -180,17 +218,17 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             objectFit: "contain", 
             position: "relative", 
             zIndex: 20,
-            animation: "logo-expand-then-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
+            animation: "logo-expand-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN PAGE, NOTE VÀ NÚT BẤM (GẦN NHAU RẤT GỌN) */}
-      <div style={{ animation: "text-reveal-smooth 1.5s ease-out 2.2s both", zIndex: 10 }}>
+      {/* TÊN PAGE, NOTE VÀ NÚT BẤM (HIỆN RA SAU) */}
+      <div style={{ animation: "intro-content-fade 1.5s ease-out 2.2s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
-          margin: "0 0 0.2rem",
+          margin: "0 0 0.35rem",
           letterSpacing: "0.04em",
           color: "#f1f8ff",
           textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
@@ -201,7 +239,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         <p style={{ 
           fontSize: "12px", 
           color: "#9db8d4", 
-          margin: "0 0 1.4rem",
+          margin: "0 0 1.8rem",
           letterSpacing: "0.08em",
           textTransform: "lowercase",
           fontFamily: '"DM Mono", monospace',
@@ -214,7 +252,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           className="primary-button" 
           onClick={onStart}
           style={{
-            minHeight: "45px",
+            minHeight: "46px",
             padding: "0 2.2rem",
             fontSize: "12.5px",
             letterSpacing: "0.12em",
@@ -1106,7 +1144,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
-// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
+// ==================== KHUNG NHẬP MẬT KHẨU STUDIO ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -1757,7 +1795,6 @@ function OwnerWorkspace({
               </section>
             )}
 
-            {/* DANH MỤC THỎ TRONG CỎ */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
