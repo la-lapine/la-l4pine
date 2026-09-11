@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: SÓNG & LOGO ĐỒNG TÂM 100%, PHÓNG TO RỒI THU NHỎ ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: ĐÃ XÓA 100% CÁC VÒNG TRÒN LỖI ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,7 +106,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 50%, #0d2853 0%, #06122a 68%, #030814 100%)",
+        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -118,57 +118,36 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* KHỐI TRUNG TÂM CHỨA CẢ LOGO VÀ SÓNG: DI CHUYỂN TỪ TÂM MÀN HÌNH LÊN VỊ TRÍ CHUẨN */
-        @keyframes center-stage-motion {
-          0%, 55% {
-            transform: translateY(40px);
-          }
-          100% {
-            transform: translateY(0);
-          }
+        /* KHẮC PHỤC TRIỆT ĐỂ MỌI VÒNG TRÒN CŨ BỊ LỖI */
+        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
+        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
+          display: none !important;
+          opacity: 0 !important;
+          animation: none !important;
+          visibility: hidden !important;
         }
 
-        /* LOGO: TỪ NHỎ PHÓNG TO CỰC ĐẠI Ở TÂM, RỒI THU NHỎ LẠI */
-        @keyframes logo-expand-shrink {
+        /* HIỆU ỨNG LOGO XUẤT HIỆN MƯỢT MÀ VÀ NỔI BẬT */
+        @keyframes clean-logo-appear {
           0% {
-            transform: scale(0.12);
+            transform: scale(0.25);
             opacity: 0;
-            filter: blur(6px);
+            filter: blur(8px);
           }
-          38% {
-            transform: scale(2.4);
+          65% {
+            transform: scale(1.08);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
-          }
-          58% {
-            transform: scale(2.4);
-            opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
+            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65));
           }
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.35));
+            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.45));
           }
         }
 
-        /* GỢN SÓNG: PHÁT RA CHÍNH XÁC TỪ TÂM CỦA LOGO, LAN CỰC RỘNG VÀ MỎNG NHẸ */
-        @keyframes ripple-from-logo-center {
-          0% {
-            transform: translate(-50%, -50%) scale(0.4);
-            opacity: 0.45;
-          }
-          40% {
-            opacity: 0.22;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(5.8);
-            opacity: 0;
-          }
-        }
-
-        /* CHỮ VÀ NÚT XUẤT HIỆN SAU KHI LOGO ĐÃ THU NHỎ XONG */
-        @keyframes intro-content-fade {
+        /* HIỆU ỨNG HIỆN CHỮ VÀ NÚT BẤM */
+        @keyframes clean-text-appear {
           0% {
             opacity: 0;
             transform: translateY(12px);
@@ -178,53 +157,26 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             transform: translateY(0);
           }
         }
-
-        .concentric-ripple {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
-          border: 1px solid rgba(173, 214, 255, 0.28);
-          background: radial-gradient(circle, rgba(173, 214, 255, 0.06) 0%, transparent 70%);
-          box-shadow: 0 0 16px rgba(142, 208, 255, 0.15);
-          pointer-events: none;
-        }
       `}</style>
 
-      {/* KHỐI MẸ ĐỒNG TÂM: CHỨA CẢ SÓNG VÀ LOGO KHÔNG THỂ BỊ LỆCH */}
-      <div style={{ 
-        position: "relative", 
-        width: "140px", 
-        height: "140px", 
-        display: "grid", 
-        placeItems: "center", 
-        marginBottom: "0.8rem",
-        animation: "center-stage-motion 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
-        zIndex: 10 
-      }}>
-        {/* 2 Vòng sóng phát ra trực tiếp từ tâm điểm logo, lan tỏa rộng khắp màn hình */}
-        <div className="concentric-ripple" style={{ animation: "ripple-from-logo-center 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 0.6s" }} />
-        <div className="concentric-ripple" style={{ animation: "ripple-from-logo-center 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.4s" }} />
-
-        {/* LOGO PHÓNG TO RỒI THU NHỎ NẰM ĐÈ LÊN TÂM SÓNG */}
+      {/* KHUNG CHỨA LOGO DUY NHẤT (KHÔNG CÓ VÒNG TRÒN NÀO ĐI KÈM) */}
+      <div style={{ position: "relative", width: "120px", height: "120px", display: "grid", placeItems: "center", marginBottom: "1rem", zIndex: 10 }}>
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
           style={{ 
-            width: "90px", 
-            height: "90px", 
+            width: "95px", 
+            height: "95px", 
             objectFit: "contain", 
             position: "relative", 
-            zIndex: 20,
-            animation: "logo-expand-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
+            zIndex: 10,
+            animation: "clean-logo-appear 1.6s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN PAGE, NOTE VÀ NÚT BẤM (HIỆN RA SAU) */}
-      <div style={{ animation: "intro-content-fade 1.5s ease-out 2.2s both", zIndex: 10 }}>
+      {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
+      <div style={{ animation: "clean-text-appear 1.4s ease-out 0.6s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
@@ -253,7 +205,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           style={{
             minHeight: "46px",
-            padding: "0 2.2rem",
+            padding: "0 2.4rem",
             fontSize: "12.5px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -1144,7 +1096,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
-// ==================== KHUNG NHẬP MẬT KHẨU STUDIO ====================
+// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -1966,7 +1918,7 @@ export default function Home() {
 
   return (
     <>
-      {/* MÀN HÌNH BẮT ĐẦU */}
+      {/* MÀN HÌNH BẮT ĐẦU DUY NHẤT */}
       {!hasEntered && (
         <StartScreen onStart={() => setHasEntered(true)} />
       )}
