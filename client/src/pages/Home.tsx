@@ -812,7 +812,7 @@ function PublicPage({
             <section className="hero-section">
               <div className="hero-copy">
                 <span className="eyebrow">thỏ nhỏ đã tìm thấy đường về nhà</span>
-                <h1>để hồn ta tìm về<br /><i>nơi nó thuộc về.</i></h1>
+                <h1>để hồn ta tìm đến<br /><i>nơi nó thuộc về.</i></h1>
                 <div className="hero-meta">
                   <div><strong>{safeCharacters.filter((character) => character && !character.comingSoon).length.toString().padStart(2, "0")}</strong><span>hồ sơ đang mở</span></div>
                   <div><strong>∞</strong><span>giấc mơ</span></div>
