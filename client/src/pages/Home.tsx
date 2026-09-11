@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: ĐÃ XÓA TẬN GỐC VÒNG TRÒN LỖI ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: ĐÃ XÓA 100% CÁC VÒNG TRÒN LỖI ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,7 +106,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 50%, #0c254a 0%, #06122a 65%, #030814 100%)",
+        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -118,93 +118,65 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* SÓNG LUÔN LẤY TÂM CHÍNH GIỮA MÀN HÌNH, LAN CỰC RỘNG VÀ CHẬM RÃI */
-        @keyframes center-screen-wave {
-          0% {
-            transform: translate(-50%, -50%) scale(0.3);
-            opacity: 0.38;
-          }
-          45% {
-            opacity: 0.16;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(5.2);
-            opacity: 0;
-          }
+        /* KHẮC PHỤC TRIỆT ĐỂ MỌI VÒNG TRÒN CŨ BỊ LỖI */
+        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
+        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
+          display: none !important;
+          opacity: 0 !important;
+          animation: none !important;
+          visibility: hidden !important;
         }
 
-        /* LOGO BẮT ĐẦU NGAY TẠI CHÍNH TÂM MÀN HÌNH, PHÓNG TO RỒI MỚI THU NHỎ VÀ NHÍCH LÊN */
-        @keyframes logo-center-then-rise {
+        /* HIỆU ỨNG LOGO XUẤT HIỆN MƯỢT MÀ VÀ NỔI BẬT */
+        @keyframes clean-logo-appear {
           0% {
-            transform: scale(0.12) translateY(42px);
+            transform: scale(0.25);
             opacity: 0;
             filter: blur(8px);
           }
-          38% {
-            transform: scale(2.4) translateY(42px);
-            opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65));
-          }
-          58% {
-            transform: scale(2.4) translateY(42px);
+          65% {
+            transform: scale(1.08);
             opacity: 1;
             filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65));
           }
           100% {
-            transform: scale(1) translateY(0);
+            transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 18px rgba(162, 218, 255, 0.35));
+            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.45));
           }
         }
 
-        /* CHỮ VÀ NÚT BẤM XUẤT HIỆN SAU KHI LOGO NHÍCH LÊN */
-        @keyframes fade-in-content {
+        /* HIỆU ỨNG HIỆN CHỮ VÀ NÚT BẤM */
+        @keyframes clean-text-appear {
           0% {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(12px);
           }
           100% {
             opacity: 1;
             transform: translateY(0);
           }
         }
-
-        .screen-center-ripple {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 140px;
-          height: 140px;
-          border-radius: 50%;
-          border: 1px solid rgba(173, 214, 255, 0.22);
-          background: radial-gradient(circle, rgba(173, 214, 255, 0.05) 0%, transparent 75%);
-          filter: blur(2px);
-          pointer-events: none;
-        }
       `}</style>
 
-      {/* SÓNG TÂM ĐIỂM LUÔN NẰM CHÍNH GIỮA MÀN HÌNH TOÀN DIỆN */}
-      <div className="screen-center-ripple" style={{ animation: "center-screen-wave 5.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 0s" }} />
-      <div className="screen-center-ripple" style={{ animation: "center-screen-wave 5.5s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.7s" }} />
-
-      {/* KHUNG CHỨA LOGO (KHOẢNG CÁCH GẦN HƠN VỚI TÊN PAGE) */}
-      <div style={{ position: "relative", width: "130px", height: "130px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
+      {/* KHUNG CHỨA LOGO DUY NHẤT (KHÔNG CÓ VÒNG TRÒN NÀO ĐI KÈM) */}
+      <div style={{ position: "relative", width: "120px", height: "120px", display: "grid", placeItems: "center", marginBottom: "1rem", zIndex: 10 }}>
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
           style={{ 
-            width: "90px", 
-            height: "90px", 
+            width: "95px", 
+            height: "95px", 
             objectFit: "contain", 
             position: "relative", 
             zIndex: 10,
-            animation: "logo-center-then-rise 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
+            animation: "clean-logo-appear 1.6s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
       {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
-      <div style={{ animation: "fade-in-content 1.5s ease-out 2.4s both", zIndex: 10 }}>
+      <div style={{ animation: "clean-text-appear 1.4s ease-out 0.6s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
@@ -233,7 +205,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           style={{
             minHeight: "46px",
-            padding: "0 2.2rem",
+            padding: "0 2.4rem",
             fontSize: "12.5px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -638,6 +610,7 @@ function DetailModal({ character, onClose, onFavorite, favorite }: { character: 
   );
 }
 
+// ==================== KHUNG MỞ KHÓA LIÊN KẾT CHO KHÁCH ====================
 function AccessModal({ character, onClose, onSuccess }: { character: Character; onClose: () => void; onSuccess: (url: string) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -700,6 +673,7 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   );
 }
 
+// ==================== HIỆU ỨNG QUAY SLOT CASINO CHO RANDOM ====================
 function SlotRandomModal({ pool, onSelect, onClose }: { pool: Character[]; onSelect: (c: Character) => void; onClose: () => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [spinning, setSpinning] = useState(true);
@@ -832,8 +806,6 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
                 </div>
               </div>
               <div className="hero-art-wrap">
-                <div className="hero-orbit orbit-one" />
-                <div className="hero-orbit orbit-two" />
                 <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
                   {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
                   <div className="hero-art-label">
@@ -973,6 +945,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
   );
 }
 
+// ==================== HỘP THÔNG BÁO CHO NGƯỜI DÙNG ====================
 function NotificationModal({ notifications, readIds, onRead, onClose }: { notifications: Array<{ id: string; title: string; body: string; publishedAt: string; pinned: boolean }>; readIds: string[]; onRead: (id: string) => void; onClose: () => void }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = notifications.find((item) => item.id === selectedId);
@@ -1077,6 +1050,7 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
   );
 }
 
+// BỘ SOẠN THẢO TRONG STUDIO
 function RichTextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   const editor = useRef<HTMLDivElement>(null);
   useEffect(() => { 
@@ -1122,6 +1096,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
 
 function SectionLabel({ eyebrow, title, count }: { eyebrow: string; title: string; count: number }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div><span className="section-count">{String(count).padStart(2, "0")}</span></div>; }
 
+// ==================== KHUNG NHẬP MẬT KHẨU STUDIO (DUY NHẤT: jk0807) ====================
 function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () => void }) {
   const [pass, setPass] = useState(""); 
   const [error, setError] = useState(""); 
@@ -1161,6 +1136,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   );
 }
 
+// ==================== WORKSPACE STUDIO ====================
 function OwnerWorkspace({ 
   characters, 
   onClose, 
@@ -1771,7 +1747,6 @@ function OwnerWorkspace({
               </section>
             )}
 
-            {/* DANH MỤC THỎ TRONG CỎ (HIỂN THỊ Ở TAB HỒ SƠ THỎ) */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
@@ -1943,7 +1918,7 @@ export default function Home() {
 
   return (
     <>
-      {/* MÀN HÌNH BẮT ĐẦU */}
+      {/* MÀN HÌNH BẮT ĐẦU DUY NHẤT */}
       {!hasEntered && (
         <StartScreen onStart={() => setHasEntered(true)} />
       )}
