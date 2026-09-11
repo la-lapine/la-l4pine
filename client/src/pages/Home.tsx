@@ -167,7 +167,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// MÀN HÌNH BẮT ĐẦU VỚI HIỆU ỨNG POP-UP PHÓNG TO THU NHỎ
+// MÀN HÌNH BẮT ĐẦU VỚI HIỆU ỨNG POP-UP PHÓNG TO THU NHỎ NGUYÊN BẢN
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -1612,13 +1612,13 @@ function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Char
   return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character?.name}?</h2><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa</button></div></div></div>;
 }
 
-// COMPONENT CHÍNH
+// ==================== COMPONENT CHÍNH ====================
 export default function Home() {
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
   const [hasEntered, setHasEntered] = useState(false);
 
-  // Dữ liệu ban đầu
+  // 1. Nhân vật: Ưu tiên localStorage -> Rồi đến file website_data.json trên GitHub -> Cuối cùng mới đến Demo
   const [characters, setCharacters] = useState<Character[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-characters");
@@ -1627,24 +1627,44 @@ export default function Home() {
         if (Array.isArray(parsed) && parsed.length) return parsed.map(sanitizeCharacter);
       }
     } catch {}
+
+    // ĐỌC TRỰC TIẾP TỪ FILE GITHUB
+    if (websiteData && Array.isArray(websiteData.characters) && websiteData.characters.length > 0) {
+      return websiteData.characters.map(sanitizeCharacter);
+    }
+
     return fallbackCharacters.map(sanitizeCharacter);
   });
 
+  // 2. Thông báo: Đọc trực tiếp từ file GitHub
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-notifications");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+
+    if (websiteData && Array.isArray(websiteData.notifications) && websiteData.notifications.length > 0) {
+      return websiteData.notifications;
+    }
+
+    return [];
   });
 
+  // 3. Playlist bài hát: Đọc trực tiếp từ file GitHub
   const [tracks, setTracks] = useState<Track[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-tracks");
       if (saved) return JSON.parse(saved);
     } catch {}
+
+    if (websiteData && Array.isArray((websiteData as any).tracks) && (websiteData as any).tracks.length > 0) {
+      return (websiteData as any).tracks;
+    }
+
     return defaultTracks;
   });
 
+  // 4. Lời nhắn / Feedback cho nhân vật
   const [feedbacks, setFeedbacks] = useState<CharacterFeedback[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-feedbacks");
