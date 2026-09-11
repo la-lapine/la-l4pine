@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: XÓA SẠCH 100% CÁC VÒNG TRÒN & THÊM HIỆU ỨNG POPUP DỊCH LÊN TRÊN ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: HIỆU ỨNG POPUP TO HƠN, NÂNG NHẸ & KHOẢNG CÁCH GẦN NHAU ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -132,30 +132,30 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           height: 0 !important;
         }
 
-        /* HIỆU ỨNG POPUP: TỪ NHỎ CĂN CHÍNH GIỮA -> LỚN DẦN LÊN -> DỊCH LÊN TRÊN 1 CHÚT */
-        @keyframes popup-pop-and-rise {
+        /* HIỆU ỨNG POPUP: TỪ NHỎ CĂN CHÍNH GIỮA -> BUNG TO HƠN HẲN -> DỊCH LÊN TRÊN 1 CHÚT */
+        @keyframes popup-pop-and-rise-larger {
           0% {
             opacity: 0;
-            transform: translateY(0) scale(0.38);
+            transform: translateY(0) scale(0.35);
             filter: blur(8px);
           }
           55% {
             opacity: 1;
-            transform: translateY(0) scale(1.05);
+            transform: translateY(0) scale(1.18);
             filter: blur(0px);
           }
           78% {
-            transform: translateY(-30px) scale(0.98);
+            transform: translateY(-32px) scale(1.06);
           }
           100% {
             opacity: 1;
-            transform: translateY(-24px) scale(1);
+            transform: translateY(-26px) scale(1.08);
             filter: blur(0px);
           }
         }
 
         .start-popup-box {
-          animation: popup-pop-and-rise 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation: popup-pop-and-rise-larger 1.2s cubic-bezier(0.2, 1, 0.35, 1) both;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -194,34 +194,35 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         }
       `}</style>
 
-      {/* KHỐI POPUP TỔNG THỂ: CHỨA TOÀN BỘ CÁC PHẦN TỬ VỚI KHOẢNG CÁCH GẦN GIAO NHAU */}
+      {/* KHỐI POPUP TỔNG THỂ ĐƯỢC PHÓNG TO HƠN, GIỮ KHOẢNG CÁCH GẦN GÀNG GẮN KẾT */}
       <div className="start-popup-box">
-        {/* VÙNG CHỨA LOGO DUY NHẤT - TUYỆT ĐỐI KHÔNG CÓ BẤT KỲ VÒNG TRÒN NÀO XUNG QUANH */}
-        <div style={{ position: "relative", width: "110px", height: "110px", display: "grid", placeItems: "center", marginBottom: "0.45rem", zIndex: 10 }}>
+        {/* VÙNG CHỨA LOGO DUY NHẤT */}
+        <div style={{ position: "relative", width: "118px", height: "118px", display: "grid", placeItems: "center", marginBottom: "0.45rem", zIndex: 10 }}>
           <img 
             src={rabbitLogo} 
             alt="la Lapine" 
             style={{ 
-              width: "95px", 
-              height: "95px", 
+              width: "105px", 
+              height: "105px", 
               objectFit: "contain", 
               position: "relative", 
               zIndex: 10,
+              filter: "drop-shadow(0 0 25px rgba(162, 218, 255, 0.5))",
               animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
             }} 
           />
         </div>
 
-        {/* TÊN PAGE, NOTE VÀ NÚT BẤM - CÁC NỘI DUNG GIỮ KHOẢNG CÁCH GẦN GÀNG LIỀN MẠCH */}
+        {/* TÊN PAGE, NOTE VÀ NÚT BẤM - CÁC NỘI DUNG GIỮ KHOẢNG CÁCH RẤT GẦN NHAU */}
         <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
           <h1 style={{ 
             fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
-            fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
-            margin: "0 0 0.25rem",
+            fontSize: "clamp(2.6rem, 6vw, 3.8rem)", 
+            margin: "0 0 0.2rem",
             letterSpacing: "0.04em",
             color: "#f1f8ff",
             lineHeight: 1.15,
-            textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
+            textShadow: "0 0 25px rgba(173, 214, 255, 0.35)"
           }}>
             la Lapine
           </h1>
@@ -242,13 +243,13 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             className="primary-button" 
             onClick={onStart}
             style={{
-              minHeight: "46px",
-              padding: "0 2.4rem",
-              fontSize: "12.5px",
+              minHeight: "48px",
+              padding: "0 2.6rem",
+              fontSize: "13px",
               letterSpacing: "0.12em",
               textTransform: "uppercase",
               borderRadius: "999px",
-              boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
+              boxShadow: "0 0 28px rgba(185, 221, 255, 0.38)",
               cursor: "pointer"
             }}
           >
@@ -1941,7 +1942,8 @@ export default function Home() {
     localStorage.setItem("lalapine-custom-characters", JSON.stringify(newChars));
   };
 
-  useEffect(() => { 
+  useEffect(() => 
+    { 
     const handler = (event: KeyboardEvent) => { 
       const key = event.key.toLowerCase(); 
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { 
