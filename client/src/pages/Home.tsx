@@ -1,9 +1,9 @@
 import { trpc } from "@/lib/trpc";
-import { supabase } from "@/lib/supabase";
+import { saveToGitHub, postFeedbackToGitHub, fetchFeedbacksFromGitHub } from "@/lib/github";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
   Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, 
-  ChevronRight, Lock, Tag, Sun, Moon, Edit2, Trash2, MessageSquare, Send 
+  ChevronRight, Lock, Tag, Sun, Moon, Edit2, Trash2, MessageSquare, Send, GitCommit, CheckCircle2
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -66,7 +66,6 @@ type LoveSpark = { id: number; x: number; y: number; rotation: number; particles
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
 const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
 
-// HÀM XỬ LÝ MÀU VÀ DỮ LIỆU AN TOÀN TUYỆT ĐỐI (KHÔNG BAO GIỜ LỖI TO LOWER CASE)
 function resolveColors(c?: any) {
   const titleColor = String(c?.titleColor || "#eff8ff");
   const bodyColor = (c?.colorSync ? titleColor : String(c?.bodyColor || "#9db8d4"));
@@ -167,113 +166,51 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: HIỆU ỨNG POP-UP PHÓNG TO THU NHỎ NGUYÊN BẢN ====================
+// MÀN HÌNH BẮT ĐẦU VỚI HIỆU ỨNG POP-UP PHÓNG TO THU NHỎ
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
+        position: "fixed", inset: 0, zIndex: 1000,
         background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-        textAlign: "center",
-        color: "#edf5ff",
-        overflow: "hidden"
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: "2rem", textAlign: "center", color: "#edf5ff", overflow: "hidden"
       }}
     >
       <style>{`
-        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
-          display: none !important;
-          opacity: 0 !important;
-          animation: none !important;
-          visibility: hidden !important;
-        }
-
         @keyframes center-stage-motion {
           0%, 55% { transform: translateY(40px); }
           100% { transform: translateY(0); }
         }
-
         @keyframes logo-expand-shrink {
           0% { transform: scale(0.12); opacity: 0; filter: blur(6px); }
           38% { transform: scale(2.4); opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65)); }
           58% { transform: scale(2.4); opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65)); }
           100% { transform: scale(1); opacity: 1; filter: blur(0px) drop-shadow(0 0 18px rgba(162, 218, 255, 0.35)); }
         }
-
         @keyframes intro-content-fade {
           0% { opacity: 0; transform: translateY(10px); }
           100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
 
-      <div style={{ 
-        position: "relative", 
-        width: "140px", 
-        height: "140px", 
-        display: "grid", 
-        placeItems: "center", 
-        marginBottom: "0.8rem",
-        animation: "center-stage-motion 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
-        zIndex: 10 
-      }}>
-        <img 
-          src={rabbitLogo} 
-          alt="la Lapine" 
-          style={{ 
-            width: "90px", 
-            height: "90px", 
-            objectFit: "contain", 
-            position: "relative", 
-            zIndex: 20,
-            animation: "logo-expand-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
-          }} 
-        />
+      <div style={{ position: "relative", width: "140px", height: "140px", display: "grid", placeItems: "center", marginBottom: "0.8rem", animation: "center-stage-motion 2.8s cubic-bezier(0.2, 1, 0.3, 1) both", zIndex: 10 }}>
+        <img src={rabbitLogo} alt="la Lapine" style={{ width: "90px", height: "90px", objectFit: "contain", position: "relative", zIndex: 20, animation: "logo-expand-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both" }} />
       </div>
 
       <div style={{ animation: "intro-content-fade 1.5s ease-out 2.4s both", zIndex: 10 }}>
-        <h1 style={{ 
-          fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
-          fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
-          margin: "0 0 0.35rem",
-          letterSpacing: "0.04em",
-          color: "#f1f8ff",
-          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
-        }}>
+        <h1 style={{ fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", margin: "0 0 0.35rem", letterSpacing: "0.04em", color: "#f1f8ff", textShadow: "0 0 20px rgba(173, 214, 255, 0.25)" }}>
           la Lapine
         </h1>
 
-        <p style={{ 
-          fontSize: "12px", 
-          color: "#9db8d4", 
-          margin: "0 0 1.8rem",
-          letterSpacing: "0.08em",
-          textTransform: "lowercase",
-          fontFamily: '"DM Mono", monospace',
-          opacity: 0.85
-        }}>
+        <p style={{ fontSize: "12px", color: "#9db8d4", margin: "0 0 1.8rem", letterSpacing: "0.08em", textTransform: "lowercase", fontFamily: '"DM Mono", monospace', opacity: 0.85 }}>
           không dành cho người dưới 18 tuổi.
         </p>
 
         <button 
           className="primary-button" 
           onClick={onStart}
-          style={{
-            minHeight: "46px",
-            padding: "0 2.2rem",
-            fontSize: "12.5px",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            borderRadius: "999px",
-            boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
-            cursor: "pointer"
-          }}
+          style={{ minHeight: "46px", padding: "0 2.2rem", fontSize: "12.5px", letterSpacing: "0.12em", textTransform: "uppercase", borderRadius: "999px", boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)", cursor: "pointer" }}
         >
           Bắt đầu hành trình
         </button>
@@ -282,7 +219,6 @@ function StartScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-// ==================== DANH SÁCH BÀI HÁT GỐC ====================
 const defaultTracks: Track[] = [
   { id: 1, title: "southbound", artist: "Artemas", audioUrl: "/audio/Artemas - southbound (official visualizer) - Artemas.mp3" },
   { id: 2, title: "Gimme More", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3" },
@@ -546,7 +482,7 @@ function DetailModal({
   onFavorite: () => void; 
   favorite: boolean;
   feedbacks: CharacterFeedback[];
-  onAddFeedback: (charId: number, author: string, content: string) => void;
+  onAddFeedback: (charId: number, charName: string, author: string, content: string) => void;
 }) {
   const safeChar = sanitizeCharacter(character);
   const [open, setOpen] = useState("description");
@@ -566,8 +502,8 @@ function DetailModal({
       toast.error("Vui lòng nhập nội dung lời nhắn.");
       return;
     }
-    onAddFeedback(safeChar.id, authorName.trim() || "Người bạn nhỏ", fbContent.trim());
-    toast.success(`Đã gửi lời nhắn đến chú thỏ ${safeChar.name}! 💌`);
+    onAddFeedback(safeChar.id, safeChar.name, authorName.trim() || "Người bạn nhỏ", fbContent.trim());
+    toast.success(`Đã gửi lời nhắn công khai đến bé ${safeChar.name}! 💌`);
     setFbContent("");
   };
 
@@ -620,7 +556,7 @@ function DetailModal({
               ))}
             </div>
 
-            {/* MỤC FEEDBACK CHO THỎ */}
+            {/* MỤC LỜI NHẮN FEEDBACK TỪ KHÁCH */}
             <div style={{ marginTop: "1.6rem", borderTop: "1px solid rgba(173,214,255,0.18)", paddingTop: "1.2rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.8rem" }}>
                 <MessageSquare size={16} style={{ color: "#a8d5ff" }} />
@@ -631,14 +567,14 @@ function DetailModal({
                 <input 
                   value={authorName} 
                   onChange={(e) => setAuthorName(e.target.value)} 
-                  placeholder="Tên / Biệt danh của bạn (để trống = Người bạn nhỏ)" 
+                  placeholder="Tên của bạn (để trống = Người bạn nhỏ)" 
                   style={{ width: "100%", height: "36px", padding: "0 10px", borderRadius: "6px", background: "rgba(6,23,49,0.5)", border: "1px solid rgba(173,214,255,0.2)", color: "#edf5ff", fontSize: "12px" }}
                 />
                 <textarea 
                   rows={2} 
                   value={fbContent} 
                   onChange={(e) => setFbContent(e.target.value)} 
-                  placeholder={`Viết lời nhắn hoặc cảm nhận cho ${safeChar.name}…`} 
+                  placeholder={`Viết lời nhắn gửi đến ${safeChar.name}…`} 
                   style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", background: "rgba(6,23,49,0.5)", border: "1px solid rgba(173,214,255,0.2)", color: "#edf5ff", fontSize: "12px" }}
                 />
                 <button type="submit" className="primary-button" style={{ minHeight: "34px", fontSize: "11.5px", justifySelf: "end", padding: "0 1rem" }}>
@@ -807,7 +743,7 @@ function PublicPage({
   readNotificationIds: string[];
   onMarkNotificationRead: (id: string) => void;
   feedbacks: CharacterFeedback[];
-  onAddFeedback: (charId: number, author: string, content: string) => void;
+  onAddFeedback: (charId: number, charName: string, author: string, content: string) => void;
 }) {
   const [location] = useLocation();
   const [query, setQuery] = useState("");
@@ -1038,19 +974,12 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
         
         {selected ? (
           <div>
-            <button 
-              className="notification-back" 
-              onClick={() => setSelectedId(null)}
-              style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "4px 8px", background: "rgba(173,214,255,0.1)", borderRadius: "4px", border: 0, color: "#9dd5ff", cursor: "pointer", fontSize: "12px", marginBottom: "1rem" }}
-            >
+            <button className="notification-back" onClick={() => setSelectedId(null)} style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "4px 8px", background: "rgba(173,214,255,0.1)", borderRadius: "4px", border: 0, color: "#9dd5ff", cursor: "pointer", fontSize: "12px", marginBottom: "1rem" }}>
               ← Quay lại danh sách thông báo
             </button>
             <span className="eyebrow">la Lapine / thư từ đồng cỏ</span>
             <h2 style={{ fontSize: "1.8rem", margin: "0.6rem 0 1rem", color: "#ebf5ff" }}>{selected.title}</h2>
-            <div 
-              className="notification-detail-body" 
-              style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "14px", color: "#cde4ff", background: "rgba(6,23,49,0.4)", padding: "1rem", borderRadius: "8px", border: "1px solid rgba(173,214,255,0.12)" }}
-            >
+            <div className="notification-detail-body" style={{ whiteSpace: "pre-wrap", lineHeight: 1.8, fontSize: "14px", color: "#cde4ff", background: "rgba(6,23,49,0.4)", padding: "1rem", borderRadius: "8px", border: "1px solid rgba(173,214,255,0.12)" }}>
               {selected.body}
             </div>
             <span className="notification-date" style={{ marginTop: "1rem", display: "block", color: "#7898bd", fontSize: "11px" }}>
@@ -1063,17 +992,7 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
             <h2 style={{ margin: "0.5rem 0 1rem" }}>Thông báo đồng cỏ</h2>
             
             {notifications.length ? (
-              <div 
-                className="notification-list" 
-                style={{ 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  gap: "0.55rem", 
-                  maxHeight: "60vh", 
-                  overflowY: "auto", 
-                  paddingRight: "4px" 
-                }}
-              >
+              <div className="notification-list" style={{ display: "flex", flexDirection: "column", gap: "0.55rem", maxHeight: "60vh", overflowY: "auto", paddingRight: "4px" }}>
                 {notifications.map((item) => {
                   if (!item) return null;
                   const isRead = readIds.includes(item.id);
@@ -1081,33 +1000,15 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
                     <button 
                       type="button" 
                       key={item.id} 
-                      onClick={() => { 
-                        onRead(item.id); 
-                        setSelectedId(item.id); 
-                      }}
+                      onClick={() => { onRead(item.id); setSelectedId(item.id); }}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.85rem 1rem",
-                        borderRadius: "8px",
-                        border: "1px solid",
-                        borderColor: isRead ? "rgba(173,214,255,0.12)" : "rgba(173,214,255,0.35)",
-                        background: isRead ? "rgba(173,214,255,0.03)" : "rgba(173,214,255,0.08)",
-                        textAlign: "left",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
+                        display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.85rem 1rem", borderRadius: "8px", border: "1px solid",
+                        borderColor: isRead ? "rgba(173,214,255,0.12)" : "rgba(173,214,255,0.35)", background: isRead ? "rgba(173,214,255,0.03)" : "rgba(173,214,255,0.08)",
+                        textAlign: "left", cursor: "pointer", transition: "all 0.2s"
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                        <span style={{ 
-                          width: "7px", 
-                          height: "7px", 
-                          borderRadius: "50%", 
-                          backgroundColor: isRead ? "transparent" : "#86cfff",
-                          border: isRead ? "1px solid #5a7d9f" : "none",
-                          flexShrink: 0
-                        }} />
+                        <span style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: isRead ? "transparent" : "#86cfff", border: isRead ? "1px solid #5a7d9f" : "none", flexShrink: 0 }} />
                         <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           <strong style={{ display: "block", color: isRead ? "#a5beda" : "#f1f7ff", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {item.title}
@@ -1161,16 +1062,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
         <button type="button" aria-label="Danh sách" onMouseDown={(event) => event.preventDefault()} onClick={() => command("insertUnorderedList")}>• list</button>
         <button type="button" aria-label="Xóa định dạng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("removeFormat")}>Aa</button>
       </div>
-      <div 
-        ref={editor} 
-        className="rich-text-editor" 
-        contentEditable 
-        suppressContentEditableWarning 
-        onInput={(event) => onChange(event.currentTarget.innerHTML)} 
-        role="textbox" 
-        aria-multiline="true" 
-        style={{ whiteSpace: "pre-wrap", lineHeight: 1.8 }}
-      />
+      <div ref={editor} className="rich-text-editor" contentEditable suppressContentEditableWarning onInput={(event) => onChange(event.currentTarget.innerHTML)} role="textbox" aria-multiline="true" style={{ whiteSpace: "pre-wrap", lineHeight: 1.8 }} />
     </div>
   );
 }
@@ -1199,13 +1091,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
         <span className="eyebrow">private studio / owner only</span>
         <h2>Vào phòng cỏ riêng</h2>
         <form onSubmit={submit}>
-          <input 
-            autoFocus 
-            type="password" 
-            value={pass} 
-            onChange={(event) => setPass(event.target.value)} 
-            placeholder="Nhập mật khẩu" 
-          />
+          <input autoFocus type="password" value={pass} onChange={(event) => setPass(event.target.value)} placeholder="Nhập mật khẩu" />
           {error && <div className="form-error">{error}</div>}
           <button className="primary-button full-width" type="submit">
             Mở studio <ArrowUpRight size={15} />
@@ -1225,7 +1111,7 @@ function OwnerWorkspace({
   notifications,
   onSaveNotifications,
   feedbacks,
-  onDeleteFeedback
+  onCommitToGitHub
 }: { 
   characters: Character[]; 
   onClose: () => void; 
@@ -1235,34 +1121,20 @@ function OwnerWorkspace({
   notifications: NotificationItem[];
   onSaveNotifications: (newNotifs: NotificationItem[]) => void;
   feedbacks: CharacterFeedback[];
-  onDeleteFeedback: (id: string) => void;
+  onCommitToGitHub: () => Promise<void>;
 }) {
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    return localStorage.getItem("lalapine-studio-theme") !== "light";
-  });
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    localStorage.setItem("lalapine-studio-theme", next ? "dark" : "light");
-  };
-
+  const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem("lalapine-studio-theme") !== "light");
+  const toggleTheme = () => { const next = !isDark; setIsDark(next); localStorage.setItem("lalapine-studio-theme", next ? "dark" : "light"); };
   const theme = {
-    bg: isDark ? "#061329" : "#f4f8fc",
-    sidebarBg: isDark ? "#081b38" : "#e8f2fa",
-    cardBg: isDark ? "rgba(11, 31, 61, 0.85)" : "#ffffff",
-    cardBorder: isDark ? "rgba(173, 214, 255, 0.16)" : "#d6e4f0",
-    textMain: isDark ? "#edf5ff" : "#1c2e44",
-    textMuted: isDark ? "#8ea8c7" : "#617996",
-    inputBg: isDark ? "rgba(5, 18, 41, 0.6)" : "#f8fbfe",
-    inputBorder: isDark ? "rgba(173, 214, 255, 0.2)" : "#d2e0ed",
+    bg: isDark ? "#061329" : "#f4f8fc", sidebarBg: isDark ? "#081b38" : "#e8f2fa", cardBg: isDark ? "rgba(11, 31, 61, 0.85)" : "#ffffff",
+    cardBorder: isDark ? "rgba(173, 214, 255, 0.16)" : "#d6e4f0", textMain: isDark ? "#edf5ff" : "#1c2e44", textMuted: isDark ? "#8ea8c7" : "#617996",
+    inputBg: isDark ? "rgba(5, 18, 41, 0.6)" : "#f8fbfe", inputBorder: isDark ? "rgba(173, 214, 255, 0.2)" : "#d2e0ed",
   };
 
   const blank = { 
     name: "", slug: "", caption: "", imageUrl: "", titleColor: "#eff8ff", bodyColor: "#9db8d4", colorSync: 1, 
     tags: "", section: "new", sections: ["new"], accessTitle: "", description: "", backstory: "", 
-    firstMessage: "", externalUrl: "", password: "", passwordHint: "", clearPassword: false,
-    hasPassword: false
+    firstMessage: "", externalUrl: "", password: "", passwordHint: "", clearPassword: false, hasPassword: false
   };
 
   const [editing, setEditing] = useState<Character | null>(null);
@@ -1270,6 +1142,7 @@ function OwnerWorkspace({
   const [form, setForm] = useState(blank);
   const [confirmDelete, setConfirmDelete] = useState<Character | null>(null);
   const [studioTab, setStudioTab] = useState("characters");
+  const [isPushing, setIsPushing] = useState(false);
 
   const safeChars = useMemo(() => characters.map(sanitizeCharacter), [characters]);
   const systemAvailableTags = useMemo(() => {
@@ -1289,7 +1162,6 @@ function OwnerWorkspace({
     setForm({ ...form, tags: updatedTags.join(", ") });
   };
 
-  // NOTIFICATION STATE
   const [noticeTitle, setNoticeTitle] = useState("Một lời nhắn từ đồng cỏ");
   const [noticeBody, setNoticeBody] = useState("");
   const [noticePublishedAt, setNoticePublishedAt] = useState("");
@@ -1297,46 +1169,23 @@ function OwnerWorkspace({
   const [editingNotifId, setEditingNotifId] = useState<string | null>(null);
 
   const handleSendNotification = () => {
-    if (!noticeBody.trim()) {
-      toast.error("Vui lòng nhập nội dung thông báo.");
-      return;
-    }
-
+    if (!noticeBody.trim()) { toast.error("Vui lòng nhập nội dung thông báo."); return; }
     let nextList: NotificationItem[];
     if (editingNotifId) {
-      nextList = notifications.map((n) => 
-        n && n.id === editingNotifId 
-          ? { ...n, title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ", body: noticeBody.trim(), publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned }
-          : n
-      );
+      nextList = notifications.map((n) => n && n.id === editingNotifId ? { ...n, title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ", body: noticeBody.trim(), publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned } : n);
       toast.success("Cập nhật thông báo thành công!");
     } else {
-      const newNotif: NotificationItem = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ",
-        body: noticeBody.trim(),
-        publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(),
-        pinned: noticePinned
-      };
+      const newNotif: NotificationItem = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, title: noticeTitle.trim() || "Một lời nhắn từ đồng cỏ", body: noticeBody.trim(), publishedAt: noticePublishedAt ? new Date(noticePublishedAt).toISOString() : new Date().toISOString(), pinned: noticePinned };
       nextList = [newNotif, ...notifications];
       toast.success("Gửi thông báo thành công!");
     }
-
     onSaveNotifications(nextList);
-
-    setNoticeTitle("Một lời nhắn từ đồng cỏ");
-    setNoticeBody("");
-    setNoticePublishedAt("");
-    setNoticePinned(false);
-    setEditingNotifId(null);
+    setNoticeTitle("Một lời nhắn từ đồng cỏ"); setNoticeBody(""); setNoticePublishedAt(""); setNoticePinned(false); setEditingNotifId(null);
   };
 
   const handleEditNotif = (notif: NotificationItem) => {
     if (!notif) return;
-    setEditingNotifId(notif.id);
-    setNoticeTitle(notif.title);
-    setNoticeBody(notif.body);
-    setNoticePinned(notif.pinned);
+    setEditingNotifId(notif.id); setNoticeTitle(notif.title); setNoticeBody(notif.body); setNoticePinned(notif.pinned);
     setNoticePublishedAt(notif.publishedAt ? new Date(notif.publishedAt).toISOString().slice(0, 16) : "");
   };
 
@@ -1345,17 +1194,10 @@ function OwnerWorkspace({
       const nextList = notifications.filter((n) => n && n.id !== id);
       onSaveNotifications(nextList);
       toast.success("Đã xóa thông báo.");
-      if (editingNotifId === id) {
-        setNoticeTitle("Một lời nhắn từ đồng cỏ");
-        setNoticeBody("");
-        setNoticePublishedAt("");
-        setNoticePinned(false);
-        setEditingNotifId(null);
-      }
+      if (editingNotifId === id) { setNoticeTitle("Một lời nhắn từ đồng cỏ"); setNoticeBody(""); setNoticePublishedAt(""); setNoticePinned(false); setEditingNotifId(null); }
     }
   };
 
-  // PLAYLIST STATE
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editArtist, setEditArtist] = useState("");
@@ -1375,10 +1217,7 @@ function OwnerWorkspace({
 
   const handleAddNewTrack = (e: FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newUrl.trim()) {
-      toast.error("Vui lòng nhập tên bài hát và đường dẫn âm thanh.");
-      return;
-    }
+    if (!newTitle.trim() || !newUrl.trim()) { toast.error("Vui lòng nhập tên bài hát và đường dẫn âm thanh."); return; }
     const newTrackItem: Track = { id: Date.now(), title: newTitle.trim(), artist: newArtist.trim() || "la Lapine", audioUrl: newUrl.trim() };
     const nextTracks = [...tracks, newTrackItem];
     onSaveTracks(nextTracks);
@@ -1409,24 +1248,9 @@ function OwnerWorkspace({
     const c = sanitizeCharacter(character);
     setEditing(c); 
     setForm({ 
-      name: c.name, 
-      slug: c.slug, 
-      caption: c.caption || "", 
-      imageUrl: c.imageUrl || "", 
-      titleColor: c.titleColor || "#eff8ff", 
-      bodyColor: c.bodyColor || "#9db8d4", 
-      colorSync: c.colorSync ?? 1, 
-      tags: tagsOf(c).join(", "), 
-      section: c.section || "new", 
-      sections: safeSectionsOf(c), 
-      description: c.description || "", 
-      backstory: c.backstory || "", 
-      firstMessage: c.firstMessage || "", 
-      externalUrl: c.externalUrl || "", 
-      accessTitle: c.accessTitle || "", 
-      password: c.password || "", 
-      passwordHint: c.passwordHint || "", 
-      clearPassword: false,
+      name: c.name, slug: c.slug, caption: c.caption || "", imageUrl: c.imageUrl || "", titleColor: c.titleColor || "#eff8ff", bodyColor: c.bodyColor || "#9db8d4", colorSync: c.colorSync ?? 1, 
+      tags: tagsOf(c).join(", "), section: c.section || "new", sections: safeSectionsOf(c), description: c.description || "", backstory: c.backstory || "", 
+      firstMessage: c.firstMessage || "", externalUrl: c.externalUrl || "", accessTitle: c.accessTitle || "", password: c.password || "", passwordHint: c.passwordHint || "", clearPassword: false,
       hasPassword: Boolean(c.passwordProtected || c.password)
     }); 
   };
@@ -1467,7 +1291,7 @@ function OwnerWorkspace({
       toast.success(`Đã cập nhật hồ sơ ${characterData.name}!`);
     } else {
       nextChars = [characterData, ...characters];
-      toast.success(`Đã gieo thêm chú thỏ ${characterData.name} vào đồng cỏ!`);
+      toast.success(`Đã thêm chú thỏ ${characterData.name}!`);
     }
 
     onSaveCharacters(nextChars);
@@ -1477,8 +1301,14 @@ function OwnerWorkspace({
   const handleDeleteCharacter = (character: Character) => {
     const nextChars = characters.filter((c) => c.id !== character.id);
     onSaveCharacters(nextChars);
-    toast.success(`Đã đưa ${character.name} ra khỏi đồng cỏ.`);
+    toast.success(`Đã xóa ${character.name}.`);
     setConfirmDelete(null);
+  };
+
+  const handlePushToGitHub = async () => {
+    setIsPushing(true);
+    await onCommitToGitHub();
+    setIsPushing(false);
   };
   
   return (
@@ -1500,32 +1330,26 @@ function OwnerWorkspace({
           <button className={studioTab === "settings" ? "active" : ""} onClick={() => setStudioTab("settings")}>Thông báo</button>
         </nav>
 
-        <div style={{ marginTop: "auto", padding: "1rem 0.4rem" }}>
+        <div style={{ marginTop: "auto", padding: "1rem 0.4rem", display: "flex", flexDirection: "column", gap: "8px" }}>
+          {/* NÚT PUSH LÊN GITHUB */}
+          <button 
+            type="button" 
+            onClick={handlePushToGitHub}
+            disabled={isPushing}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid #3a86ff", background: "#3a86ff", color: "#ffffff", fontSize: "12px", fontWeight: 600, cursor: isPushing ? "not-allowed" : "pointer" }}
+          >
+            <GitCommit size={15} />
+            <span>{isPushing ? "Đang đẩy lên GitHub..." : "Lưu vĩnh viễn lên GitHub"}</span>
+          </button>
+
           <button 
             type="button" 
             onClick={toggleTheme}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              padding: "0.55rem 0.8rem",
-              borderRadius: "8px",
-              border: `1px solid ${theme.cardBorder}`,
-              background: isDark ? "rgba(255,255,255,0.06)" : "#ffffff",
-              color: theme.textMain,
-              fontSize: "11.5px",
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "0.55rem 0.8rem", borderRadius: "8px", border: `1px solid ${theme.cardBorder}`, background: isDark ? "rgba(255,255,255,0.06)" : "#ffffff", color: theme.textMain, fontSize: "11.5px", cursor: "pointer" }}
           >
             {isDark ? <Sun size={14} style={{ color: "#ffd166" }} /> : <Moon size={14} style={{ color: "#3a86ff" }} />}
             <span>{isDark ? "Giao diện Sáng" : "Giao diện Tối"}</span>
           </button>
-          <div style={{ marginTop: "0.6rem", textAlign: "center" }}>
-            <span style={{ color: theme.textMuted, fontSize: "11px" }}>Quyền: Chủ sở hữu</span>
-          </div>
         </div>
       </aside>
 
@@ -1541,7 +1365,6 @@ function OwnerWorkspace({
         </header>
 
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.9fr)", gap: "1.4rem" }}>
-          {/* TAB 1: HỒ SƠ THỎ */}
           <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
             <span className="eyebrow" style={{ color: theme.textMuted }}>{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
             <h2 style={{ color: theme.textMain }}>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
@@ -1586,18 +1409,13 @@ function OwnerWorkspace({
                 </div>
 
                 <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginTop: "10px", cursor: "pointer", fontSize: "12px", color: theme.textMain }}>
-                  <input 
-                    type="checkbox" 
-                    checked={Boolean(form.colorSync)} 
-                    onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} 
-                    style={{ width: "17px", height: "17px", accentColor: "#3a86ff", cursor: "pointer" }}
-                  /> 
+                  <input type="checkbox" checked={Boolean(form.colorSync)} onChange={(event) => setForm({ ...form, colorSync: event.target.checked ? 1 : 0, bodyColor: event.target.checked ? form.titleColor : form.bodyColor })} style={{ width: "17px", height: "17px", accentColor: "#3a86ff", cursor: "pointer" }} /> 
                   <span>Đồng bộ một màu cho cả tiêu đề và nội dung</span>
                 </label>
               </div>
 
               <div>
-                <label style={{ color: theme.textMuted, display: "block", marginBottom: "0.3rem" }}>URL nhân vật (Link khi bấm Mở cửa trái tim)</label>
+                <label style={{ color: theme.textMuted, display: "block", marginBottom: "0.3rem" }}>URL nhân vật</label>
                 <input type="url" value={form.externalUrl} onChange={(event) => setForm({ ...form, externalUrl: event.target.value })} placeholder="https://character.ai/…" style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
               </div>
               
@@ -1608,92 +1426,23 @@ function OwnerWorkspace({
               
               <div style={{ padding: "0.9rem 1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}` }}>
                 <label style={{ display: "inline-flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 600, color: theme.textMain, fontSize: "13px" }}>
-                  <input 
-                    type="checkbox" 
-                    checked={form.hasPassword} 
-                    onChange={(e) => setForm({ 
-                      ...form, 
-                      hasPassword: e.target.checked, 
-                      password: e.target.checked ? (form.password || "") : "" 
-                    })} 
-                    style={{ width: "17px", height: "17px", accentColor: "#3a86ff", cursor: "pointer" }}
-                  /> 
-                  <Lock size={15} style={{ color: "#9ecaff" }} /> Đặt mật khẩu bảo vệ khi mở liên kết này
+                  <input type="checkbox" checked={form.hasPassword} onChange={(e) => setForm({ ...form, hasPassword: e.target.checked, password: e.target.checked ? (form.password || "") : "" })} style={{ width: "17px", height: "17px", accentColor: "#3a86ff", cursor: "pointer" }} /> 
+                  <Lock size={15} style={{ color: "#9ecaff" }} /> Đặt mật khẩu bảo vệ khi mở liên kết
                 </label>
 
                 {form.hasPassword && (
                   <div style={{ marginTop: "0.8rem", display: "grid", gap: "0.8rem", borderTop: `1px dashed ${theme.inputBorder}`, paddingTop: "0.8rem" }}>
-                    <div>
-                      <label style={{ color: theme.textMuted, fontSize: "11px", display: "block", marginBottom: "4px" }}>
-                        Mật khẩu mở khóa {editing && form.password && <small style={{ color: "#a8d5ff", marginLeft: "6px" }}>(Hiện tại: <b>{form.password}</b>)</small>}
-                      </label>
-                      <input 
-                        type="text" 
-                        value={form.password} 
-                        onChange={(event) => setForm({ ...form, password: event.target.value })} 
-                        placeholder="Nhập mật khẩu (ví dụ: mup-sua-123)" 
-                        style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ color: theme.textMuted, fontSize: "11px", display: "block", marginBottom: "4px" }}>Gợi ý mật khẩu cho khách</label>
-                      <input 
-                        value={form.passwordHint} 
-                        onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} 
-                        placeholder="Ví dụ: Tên món bánh thỏ thích nhất..." 
-                        style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }}
-                      />
-                    </div>
+                    <input type="text" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Nhập mật khẩu" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                    <input value={form.passwordHint} onChange={(event) => setForm({ ...form, passwordHint: event.target.value })} placeholder="Gợi ý mật khẩu" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                   </div>
                 )}
               </div>
 
               <div style={{ padding: "0.9rem 1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}` }}>
                 <label style={{ display: "block", marginBottom: "0.4rem", color: theme.textMuted, fontSize: "12px" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                    <Tag size={14} /> Tags hồ sơ (Ngăn cách nhau bằng dấu phẩy)
-                  </span>
-                  <input 
-                    value={form.tags} 
-                    onChange={(event) => setForm({ ...form, tags: event.target.value })} 
-                    placeholder="ví dụ: mới ra lò, mềm, ấm áp" 
-                    style={{ width: "100%", height: "40px", padding: "0 12px", borderRadius: "8px", marginTop: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }}
-                  />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><Tag size={14} /> Tags hồ sơ</span>
+                  <input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="ví dụ: mới ra lò, mềm, ấm áp" style={{ width: "100%", height: "40px", padding: "0 12px", borderRadius: "8px", marginTop: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                 </label>
-
-                {systemAvailableTags.length > 0 && (
-                  <div style={{ marginTop: "0.6rem", borderTop: `1px dashed ${theme.inputBorder}`, paddingTop: "0.5rem" }}>
-                    <small style={{ color: theme.textMuted, display: "block", marginBottom: "0.4rem", fontSize: "11px" }}>
-                      Gợi ý tag đã có (Bấm để chọn nhanh):
-                    </small>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem" }}>
-                      {systemAvailableTags.map((tagItem) => {
-                        const currentArr = (form.tags || "").split(",").map((t) => t.trim().toLowerCase());
-                        const isSelected = currentArr.includes(String(tagItem || "").toLowerCase());
-                        return (
-                          <button
-                            key={tagItem}
-                            type="button"
-                            onClick={() => toggleTagSelection(tagItem)}
-                            style={{
-                              padding: "4px 10px",
-                              borderRadius: "6px",
-                              border: "1px solid",
-                              borderColor: isSelected ? "#a8d5ff" : theme.inputBorder,
-                              background: isSelected ? "rgba(168,213,255,.25)" : (isDark ? "rgba(255,255,255,.05)" : "#ffffff"),
-                              color: isSelected ? (isDark ? "#ffffff" : "#0c2c59") : theme.textMuted,
-                              fontSize: "11px",
-                              cursor: "pointer",
-                              transition: "all 0.15s"
-                            }}
-                          >
-                            {isSelected ? `✓ ${tagItem}` : `+ ${tagItem}`}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div style={{ padding: "0.9rem 1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}` }}>
@@ -1702,32 +1451,11 @@ function OwnerWorkspace({
                   {[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => {
                     const isChecked = form.sections.includes(value);
                     return (
-                      <label 
-                        key={value} 
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          padding: "8px 14px",
-                          borderRadius: "8px",
-                          border: `1px solid ${isChecked ? "#9ecaff" : theme.inputBorder}`,
-                          background: isChecked ? (isDark ? "rgba(158,202,255,0.18)" : "rgba(158,202,255,0.25)") : theme.cardBg,
-                          color: isChecked ? (isDark ? "#ffffff" : "#082142") : theme.textMuted,
-                          cursor: "pointer",
-                          fontSize: "12.5px",
-                          fontWeight: isChecked ? 600 : 400,
-                          transition: "all 0.15s"
-                        }}
-                      >
-                        <input 
-                          type="checkbox" 
-                          checked={isChecked} 
-                          onChange={(event) => {
-                            const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value);
-                            setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value });
-                          }} 
-                          style={{ width: "16px", height: "16px", accentColor: "#3a86ff", cursor: "pointer" }}
-                        /> 
+                      <label key={value} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 14px", borderRadius: "8px", border: `1px solid ${isChecked ? "#9ecaff" : theme.inputBorder}`, background: isChecked ? (isDark ? "rgba(158,202,255,0.18)" : "rgba(158,202,255,0.25)") : theme.cardBg, color: isChecked ? (isDark ? "#ffffff" : "#082142") : theme.textMuted, cursor: "pointer", fontSize: "12.5px" }}>
+                        <input type="checkbox" checked={isChecked} onChange={(event) => {
+                          const next = event.target.checked ? Array.from(new Set([...form.sections, value])) : form.sections.filter((item) => item !== value);
+                          setForm({ ...form, sections: next.length ? next : [value], section: next[0] || value });
+                        }} style={{ width: "16px", height: "16px", accentColor: "#3a86ff" }} /> 
                         {label}
                       </label>
                     );
@@ -1752,220 +1480,83 @@ function OwnerWorkspace({
           </section>
 
           <div>
-            {/* TAB FEEDBACKS / LỜI NHẮN */}
+            {/* TAB FEEDBACKS */}
             {studioTab === "feedbacks" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                  <div>
-                    <span className="eyebrow" style={{ color: theme.textMuted }}>feedback & messages</span>
-                    <h2 style={{ color: theme.textMain, margin: "0.2rem 0" }}>Hòm thư gửi thỏ ({feedbacks.length})</h2>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gap: "0.6rem", maxHeight: "550px", overflowY: "auto", paddingRight: "4px" }}>
+                <span className="eyebrow" style={{ color: theme.textMuted }}>guestbook / public feedback</span>
+                <h2 style={{ color: theme.textMain, margin: "0.2rem 0 1rem" }}>Hòm thư gửi thỏ ({feedbacks.length})</h2>
+                <div style={{ display: "grid", gap: "0.6rem", maxHeight: "550px", overflowY: "auto" }}>
                   {feedbacks.length > 0 ? (
-                    feedbacks.map((fb) => {
-                      const targetChar = safeChars.find((c) => c.id === fb.characterId);
-                      return (
-                        <div key={fb.id} style={{ padding: "10px 12px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                            <div>
-                              <strong style={{ fontSize: "13px", color: theme.textMain }}>{fb.authorName}</strong>
-                              <small style={{ marginLeft: "8px", color: "#a8d5ff", fontSize: "11px" }}>
-                                ➜ Gửi: <b>{targetChar ? targetChar.name : `Thỏ #${fb.characterId}`}</b>
-                              </small>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <small style={{ color: theme.textMuted, fontSize: "10.5px" }}>{new Date(fb.createdAt).toLocaleString("vi-VN")}</small>
-                              <button onClick={() => onDeleteFeedback(fb.id)} style={{ background: "none", border: 0, color: "#e29aab", cursor: "pointer", padding: "2px" }} title="Xóa"><Trash2 size={13} /></button>
-                            </div>
-                          </div>
-                          <p style={{ margin: "4px 0 0", fontSize: "12px", color: theme.textMuted, lineHeight: 1.6 }}>{fb.content}</p>
+                    feedbacks.map((fb) => (
+                      <div key={fb.id} style={{ padding: "10px 12px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <strong style={{ fontSize: "13px", color: theme.textMain }}>{fb.authorName}</strong>
+                          <small style={{ color: theme.textMuted, fontSize: "10.5px" }}>{new Date(fb.createdAt).toLocaleString("vi-VN")}</small>
                         </div>
-                      );
-                    })
+                        <p style={{ margin: "4px 0 0", fontSize: "12px", color: theme.textMuted, lineHeight: 1.6 }}>{fb.content}</p>
+                      </div>
+                    ))
                   ) : (
-                    <p style={{ color: theme.textMuted, fontSize: "12px", textAlign: "center", padding: "2rem 0" }}>Chưa có lời nhắn nào từ người dùng.</p>
+                    <p style={{ color: theme.textMuted, fontSize: "12px", textAlign: "center", padding: "2rem 0" }}>Chưa có lời nhắn nào.</p>
                   )}
                 </div>
               </section>
             )}
 
-            {/* TAB 2: THÔNG BÁO */}
+            {/* TAB THÔNG BÁO */}
             {studioTab === "settings" && (
               <section className="notification-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <span className="eyebrow" style={{ color: theme.textMuted }}>broadcast / all visitors</span>
-                <h3 style={{ color: theme.textMain, margin: "0.3rem 0 1rem" }}>
-                  {editingNotifId ? "Sửa thông báo" : "Gửi thông báo mới"}
-                </h3>
-                
-                <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề thông báo" style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                <textarea rows={4} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Viết lời nhắn mà mọi người trong đồng cỏ sẽ thấy…" style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                
-                <div style={{ marginBottom: "12px" }}>
-                  <label style={{ color: theme.textMuted, fontSize: "11px", display: "block", marginBottom: "4px" }}>Ngày giờ xuất bản</label>
-                  <input type="datetime-local" value={noticePublishedAt} onChange={(event) => setNoticePublishedAt(event.target.value)} style={{ width: "100%", height: "40px", padding: "0 10px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                </div>
-
-                <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", color: theme.textMain, fontSize: "12.5px", marginBottom: "14px" }}>
-                  <input type="checkbox" checked={noticePinned} onChange={(event) => setNoticePinned(event.target.checked)} style={{ width: "16px", height: "16px", accentColor: "#3a86ff" }} /> Ghim thông báo lên đầu
-                </label>
-
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button 
-                    className="primary-button" 
-                    style={{ flex: 1, minHeight: "42px" }}
-                    disabled={!noticeBody.trim()} 
-                    onClick={handleSendNotification}
-                  >
-                    {editingNotifId ? "Cập nhật thông báo" : "Gửi thông báo"} <Bell size={15} />
-                  </button>
-                  {editingNotifId && (
-                    <button 
-                      className="secondary-button" 
-                      onClick={() => {
-                        setEditingNotifId(null);
-                        setNoticeTitle("Một lời nhắn từ đồng cỏ");
-                        setNoticeBody("");
-                        setNoticePublishedAt("");
-                        setNoticePinned(false);
-                      }}
-                      style={{ borderColor: theme.cardBorder, color: theme.textMain, minHeight: "42px" }}
-                    >
-                      Hủy sửa
-                    </button>
-                  )}
-                </div>
-
-                <div style={{ marginTop: "1.8rem", borderTop: `1px solid ${theme.cardBorder}`, paddingTop: "1rem" }}>
-                  <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử ({notifications.length})</span>
-                  <div style={{ display: "grid", gap: ".5rem", marginTop: ".6rem", maxHeight: "280px", overflowY: "auto" }}>
-                    {notifications.map((item) => {
-                      if (!item) return null;
-                      return (
-                        <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${editingNotifId === item.id ? '#9ecaff' : theme.cardBorder}`, borderRadius: "8px", background: editingNotifId === item.id ? "rgba(173,214,255,0.15)" : theme.inputBg }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                            <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
-                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                              {item.pinned && <small style={{ color: "#ffbedb", fontSize: "10px" }}>★ Đã ghim</small>}
-                              <button onClick={() => handleEditNotif(item)} style={{ background: "none", border: 0, color: theme.textMuted, cursor: "pointer", padding: "2px" }} title="Sửa"><Edit2 size={13} /></button>
-                              <button onClick={() => handleDeleteNotif(item.id)} style={{ background: "none", border: 0, color: "#e29aab", cursor: "pointer", padding: "2px" }} title="Xóa"><Trash2 size={13} /></button>
-                            </div>
-                          </div>
-                          <p style={{ margin: ".25rem 0", color: theme.textMuted, fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
-                          <small style={{ color: theme.textMuted, fontSize: ".6rem" }}>{new Date(item.publishedAt).toLocaleString("vi-VN")}</small>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <h3 style={{ color: theme.textMain, margin: "0.3rem 0 1rem" }}>{editingNotifId ? "Sửa thông báo" : "Gửi thông báo mới"}</h3>
+                <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề" style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                <textarea rows={4} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Nội dung thông báo…" style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
+                <button className="primary-button" style={{ width: "100%" }} onClick={handleSendNotification}>{editingNotifId ? "Cập nhật" : "Gửi thông báo"} <Bell size={15} /></button>
               </section>
             )}
 
-            {/* TAB 3: PLAYLIST */}
+            {/* TAB PLAYLIST */}
             {studioTab === "playlist" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                  <div>
-                    <span className="eyebrow" style={{ color: theme.textMuted }}>playlist / la Lapine radio</span>
-                    <h2 style={{ color: theme.textMain, margin: "0.2rem 0" }}>Quản lý âm thanh ({tracks.length})</h2>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={handleResetDefaultTracks}
-                    className="secondary-button" 
-                    style={{ fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMuted }}
-                  >
-                    Khôi phục 30 bài gốc
-                  </button>
+                  <h2 style={{ color: theme.textMain, margin: 0 }}>Quản lý âm thanh ({tracks.length})</h2>
+                  <button type="button" onClick={handleResetDefaultTracks} className="secondary-button" style={{ fontSize: "11px" }}>Khôi phục 30 bài gốc</button>
                 </div>
-
-                {editingTrack ? (
-                  <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
-                      <strong style={{ fontSize: "13px", color: theme.textMain }}>Đang sửa: {editingTrack.title}</strong>
-                    </div>
-                    <div style={{ display: "grid", gap: "0.6rem" }}>
-                      <div>
-                        <label style={{ color: theme.textMuted, fontSize: "11px" }}>Tên bài hát</label>
-                        <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                      </div>
-                      <div>
-                        <label style={{ color: theme.textMuted, fontSize: "11px" }}>Nghệ sĩ / Ca sĩ</label>
-                        <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="la Lapine" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                      </div>
-                      <div>
-                        <label style={{ color: theme.textMuted, fontSize: "11px" }}>Đường dẫn file</label>
-                        <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: "8px", marginTop: "1rem" }}>
-                      <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu thay đổi</button>
-                      <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain }}>Hủy</button>
-                    </div>
-                  </form>
-                ) : (
-                  <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.6rem" }}>
-                      <strong style={{ fontSize: "13px", color: theme.textMain }}>Thêm bài hát mới</strong>
-                    </div>
-                    <div style={{ display: "grid", gap: "0.6rem" }}>
-                      <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                      <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Tên nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                      <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn file (/audio/bai_hat.mp3)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                    </div>
-                    <button type="submit" className="primary-button" style={{ marginTop: "0.8rem", width: "100%", minHeight: "38px" }}>Thêm vào Playlist <ArrowUpRight size={15} /></button>
-                  </form>
-                )}
-
-                <span className="eyebrow" style={{ color: theme.textMuted }}>Danh sách bài ({tracks.length})</span>
-                <div style={{ display: "grid", gap: "0.5rem", marginTop: ".6rem", maxHeight: "320px", overflowY: "auto" }}>
+                <div style={{ display: "grid", gap: "0.5rem", maxHeight: "320px", overflowY: "auto" }}>
                   {tracks.map((track, index) => (
-                    <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
-                      <div style={{ minWidth: 0, paddingRight: "8px" }}>
-                        <span style={{ color: theme.textMain, fontSize: "12.5px", fontWeight: 500, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>0{index + 1}. {track.title}</span>
-                        <small style={{ color: theme.textMuted, display: "block", fontSize: "10.5px" }}>{track.artist || "la Lapine"}</small>
-                      </div>
-                      <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); setEditUrl(track.audioUrl); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
-                        <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
-                      </div>
+                    <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
+                      <span style={{ color: theme.textMain, fontSize: "12.5px" }}>0{index + 1}. {track.title}</span>
+                      <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* TAB 4: TAGS */}
+            {/* TAB TAGS */}
             {studioTab === "tags" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <span className="eyebrow" style={{ color: theme.textMuted }}>tags / đồng cỏ</span>
                 <h2 style={{ color: theme.textMain, margin: "0.3rem 0 0.8rem" }}>Quản lý tags</h2>
-                <p style={{ color: theme.textMuted, fontSize: "12px", marginBottom: "1rem", lineHeight: 1.6 }}>Tags được tạo tự động từ hồ sơ thỏ. Bạn có thể thêm tag mới để dùng khi chỉnh sửa nhân vật.</p>
-                <input id="new-tag" placeholder="ví dụ: moonlit" style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "10px" }} />
-                <button className="primary-button" style={{ width: "100%" }} onClick={() => { const input = document.getElementById("new-tag") as HTMLInputElement | null; if (input?.value.trim()) { toast.success("Tag sẽ khả dụng sau lần cập nhật hồ sơ tiếp theo."); input.value = ""; } }}>Thêm tag</button>
+                <p style={{ color: theme.textMuted, fontSize: "12px", marginBottom: "1rem" }}>Tags được tạo tự động từ hồ sơ thỏ.</p>
               </section>
             )}
 
-            {/* DANH MỤC HỒ SƠ THỎ (BÊN CỘT PHẢI CỦA TAB CHARACTERS) */}
+            {/* DANH SÁCH THỎ BÊN PHẢI */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
                   <span className="eyebrow" style={{ color: theme.textMuted }}>catalog / {safeChars.length} hồ sơ</span>
                   <h2 style={{ color: theme.textMain, margin: "0.2rem 0" }}>Đang có trong cỏ</h2>
                 </div>
-                <div style={{ display: "grid", gap: "0.6rem", maxHeight: "650px", overflowY: "auto", paddingRight: "4px" }}>
+                <div style={{ display: "grid", gap: "0.6rem", maxHeight: "650px", overflowY: "auto" }}>
                   {safeChars.map((character) => (
                     <div key={character.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: editing?.id === character.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "10px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <img src={character.imageUrl || rabbitLogo} alt="" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "8px", background: "#0c2650" }} />
-                        <div>
-                          <strong style={{ color: theme.textMain, fontSize: "13px", display: "block" }}>{character.name}</strong>
-                          <span style={{ color: theme.textMuted, fontSize: "11px" }}>{tagsOf(character).slice(0, 2).join(" · ") || "chưa có tag"}</span>
-                        </div>
+                        <strong style={{ color: theme.textMain, fontSize: "13px" }}>{character.name}</strong>
                       </div>
                       <div style={{ display: "flex", gap: "6px" }}>
-                        <button className="secondary-button" onClick={() => startEdit(character)} style={{ padding: "4px 10px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
+                        <button className="secondary-button" onClick={() => startEdit(character)} style={{ padding: "4px 10px", fontSize: "11px" }}>Sửa</button>
                         <button className="icon-button danger" onClick={() => setConfirmDelete(character)} style={{ width: "28px", height: "28px" }}>×</button>
                       </div>
                     </div>
@@ -1983,92 +1574,33 @@ function OwnerWorkspace({
   );
 }
 
-function CharacterPreviewModal({ form, onClose }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number; description: string; backstory: string; firstMessage: string; accessTitle: string; sections: string[] }; onClose: () => void }) {
-  const [zone, setZone] = useState(form.sections[0] || "new");
+function CharacterPreviewModal({ form, onClose }: { form: any; onClose: () => void }) {
+  const [zone, setZone] = useState(form.sections?.[0] || "new");
   const { titleColor, bodyColor } = resolveColors(form);
   const zoneName = zone === "new" ? "Thỏ Múp Sữa" : zone === "featured" ? "Thỏ Kỳ Tích" : "Thỏ Mặt Trăng";
   return (
     <div className="modal-layer" onClick={onClose}>
-      <style>{`
-        .rich-preview-rendered {
-          white-space: pre-wrap !important;
-          word-break: break-word !important;
-          line-height: 1.85 !important;
-        }
-        .rich-preview-rendered i, .rich-preview-rendered em {
-          font-style: italic !important;
-        }
-        .rich-preview-rendered b, .rich-preview-rendered strong {
-          font-weight: 700 !important;
-        }
-      `}</style>
       <div className="modal-panel preview-modal" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties} onClick={(event) => event.stopPropagation()}>
         <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
         <div className="preview-zone-tabs" role="tablist">{[["new", "Thỏ Múp Sữa"], ["featured", "Thỏ Kỳ Tích"], ["coming", "Thỏ Mặt Trăng"]].map(([value, label]) => <button type="button" role="tab" className={zone === value ? "active" : ""} onClick={() => setZone(value)} key={value}>{label}</button>)}</div>
         <div className="preview-zone-heading"><span className="eyebrow">xem trước / {zoneName}</span></div>
         <PreviewZone form={form} zone={zone} />
-        
-        <div className="preview-rich" style={{ marginTop: "1.5rem" }}>
-          <h3>Mô tả</h3>
-          <div className="rich-preview-rendered" dangerouslySetInnerHTML={{ __html: renderRichText(form.description) }} />
-          <h3>Backstory</h3>
-          <div className="rich-preview-rendered" dangerouslySetInnerHTML={{ __html: renderRichText(form.backstory) }} />
-          <h3>Tin nhắn đầu tiên</h3>
-          <div className="rich-preview-rendered" dangerouslySetInnerHTML={{ __html: renderRichText(form.firstMessage) }} />
-        </div>
-
         <button className="primary-button" type="button" style={{ marginTop: "1.2rem" }} onClick={onClose}>Đóng xem trước</button>
       </div>
     </div>
   );
 }
 
-function PreviewZone({ form, zone }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number }; zone: string }) {
+function PreviewZone({ form, zone }: { form: any; zone: string }) {
   const image = form.imageUrl || rabbitLogo; 
   const { titleColor, bodyColor } = resolveColors(form);
-  if (zone === "coming") return <div className="preview-coming-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><span className="preview-coming-art"><img src={image} alt={form.name || "Ảnh"} /></span><span><strong>{form.name || "Tên"}</strong><small>{form.caption}</small></span><ArrowUpRight size={16} /></div>;
   return (
-    <article 
-      className="preview-character-card" 
-      style={{ 
-        "--title-color": titleColor, 
-        "--body-color": bodyColor,
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: "16px",
-        border: "1px solid rgba(173,214,255,.2)"
-      } as React.CSSProperties}
-    >
+    <article className="preview-character-card" style={{ "--title-color": titleColor, "--body-color": bodyColor, position: "relative", overflow: "hidden", borderRadius: "16px", border: "1px solid rgba(173,214,255,.2)" } as React.CSSProperties}>
       <div className="preview-character-art" style={{ aspectRatio: "1 / 1.15", position: "relative" }}>
         <img src={image} alt={form.name || "Ảnh"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-        
-        <div 
-          style={{
-            position: "absolute",
-            bottom: "0.65rem",
-            left: "0.65rem",
-            right: "0.65rem",
-            padding: "0.8rem 0.95rem",
-            background: "rgba(255, 255, 255, 0.18)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            borderRadius: "14px",
-            border: "1px solid rgba(255, 255, 255, 0.3)",
-            boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.25)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.25rem"
-          }}
-        >
-          <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.9)", fontFamily: '"DM Mono", monospace', fontWeight: 600 }}>
-            {zone === "new" ? "mới ra lò" : "thỏ kỳ tích"}
-          </span>
-          <strong style={{ fontSize: "1.18rem", color: titleColor || "#ffffff", fontFamily: '"Playfair Display", serif', lineHeight: 1.15 }}>
-            {form.name || "Tên nhân vật"}
-          </strong>
-          <small style={{ fontSize: "11px", color: bodyColor || "rgba(255,255,255,0.85)", lineHeight: 1.4 }}>
-            {form.caption || "Caption của nhân vật sẽ hiển thị ở đây."}
-          </small>
+        <div style={{ position: "absolute", bottom: "0.65rem", left: "0.65rem", right: "0.65rem", padding: "0.8rem 0.95rem", background: "rgba(255, 255, 255, 0.18)", backdropFilter: "blur(12px)", borderRadius: "14px", border: "1px solid rgba(255, 255, 255, 0.3)" }}>
+          <strong style={{ fontSize: "1.18rem", color: titleColor || "#ffffff", fontFamily: '"Playfair Display", serif', lineHeight: 1.15 }}>{form.name || "Tên nhân vật"}</strong>
+          <small style={{ fontSize: "11px", color: bodyColor || "rgba(255,255,255,0.85)", display: "block" }}>{form.caption || "Caption của nhân vật"}</small>
         </div>
       </div>
     </article>
@@ -2076,16 +1608,16 @@ function PreviewZone({ form, zone }: { form: { name: string; caption: string; im
 }
 
 function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Character; onClose: () => void; onConfirm: () => void }) {
-  return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character?.name}?</h2><p>Hồ sơ sẽ rời khỏi đồng cỏ.</p><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa hồ sơ</button></div></div></div>;
+  return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character?.name}?</h2><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa</button></div></div></div>;
 }
 
-// ==================== COMPONENT CHÍNH ====================
+// COMPONENT CHÍNH
 export default function Home() {
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
   const [hasEntered, setHasEntered] = useState(false);
 
-  // 1. Nhân vật
+  // Dữ liệu ban đầu
   const [characters, setCharacters] = useState<Character[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-characters");
@@ -2097,17 +1629,13 @@ export default function Home() {
     return fallbackCharacters.map(sanitizeCharacter);
   });
 
-  // 2. Thông báo
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-notifications");
       return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
-  // 3. Playlist bài hát
   const [tracks, setTracks] = useState<Track[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-tracks");
@@ -2116,22 +1644,15 @@ export default function Home() {
     return defaultTracks;
   });
 
-  // 4. Lời nhắn / Feedback cho nhân vật
   const [feedbacks, setFeedbacks] = useState<CharacterFeedback[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-feedbacks");
       return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("lalapine-read-notifications") || "[]");
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem("lalapine-read-notifications") || "[]"); } catch { return []; }
   });
 
   const markNotificationRead = (id: string) => {
@@ -2141,65 +1662,33 @@ export default function Home() {
     localStorage.setItem("lalapine-read-notifications", JSON.stringify(next));
   };
 
-  // NẠP DỮ LIỆU TỪ SUPABASE
+  // Nạp feedbacks công khai từ GitHub Issues khi vào web
   useEffect(() => {
-    async function loadCloudData() {
-      try {
-        if (!supabase) return;
-        const { data, error } = await supabase
-          .from("website_data")
-          .select("content")
-          .eq("id", "main")
-          .single();
-
-        if (data?.content && !error) {
-          const cloud = typeof data.content === "string" ? JSON.parse(data.content) : data.content;
-          if (Array.isArray(cloud.characters) && cloud.characters.length > 0) {
-            const sanitized = cloud.characters.map(sanitizeCharacter);
-            setCharacters(sanitized);
-            localStorage.setItem("lalapine-custom-characters", JSON.stringify(sanitized));
-          }
-          if (Array.isArray(cloud.notifications)) {
-            setNotifications(cloud.notifications);
-            localStorage.setItem("lalapine-custom-notifications", JSON.stringify(cloud.notifications));
-          }
-          if (Array.isArray(cloud.tracks) && cloud.tracks.length > 0) {
-            setTracks(cloud.tracks);
-            localStorage.setItem("lalapine-custom-tracks", JSON.stringify(cloud.tracks));
-          }
-          if (Array.isArray(cloud.feedbacks)) {
-            setFeedbacks(cloud.feedbacks);
-            localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(cloud.feedbacks));
-          }
-        }
-      } catch (err) {
-        console.error("Lỗi nạp dữ liệu Supabase:", err);
+    async function loadGitHubFeedbacks() {
+      const gitFeedbacks = await fetchFeedbacksFromGitHub();
+      if (gitFeedbacks.length > 0) {
+        setFeedbacks(gitFeedbacks);
+        localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(gitFeedbacks));
       }
     }
-    loadCloudData();
+    loadGitHubFeedbacks();
   }, []);
 
-  const syncToCloud = async (
-    updatedCharacters = characters, 
-    updatedNotifs = notifications, 
-    updatedTracks = tracks,
-    updatedFeedbacks = feedbacks
-  ) => {
-    try {
-      if (!supabase) return;
-      await supabase
-        .from("website_data")
-        .upsert({ 
-          id: "main", 
-          content: { 
-            characters: updatedCharacters.map(sanitizeCharacter), 
-            notifications: updatedNotifs, 
-            tracks: updatedTracks,
-            feedbacks: updatedFeedbacks
-          } 
-        });
-    } catch (err) {
-      console.error("Lỗi đồng bộ Supabase:", err);
+  // Hàm commit thẳng lên GitHub từ Studio
+  const handleCommitToGitHub = async () => {
+    const payload = {
+      characters: characters.map(sanitizeCharacter),
+      notifications: notifications,
+      tracks: tracks,
+    };
+    const success = await saveToGitHub(payload);
+    if (success) {
+      toast.success("Đã đẩy commit lên GitHub thành công! Vercel đang tự build lại web.", {
+        icon: <CheckCircle2 size={16} style={{ color: "#4ade80" }} />,
+        duration: 5000,
+      });
+    } else {
+      toast.error("Chưa đẩy được lên GitHub. Hãy kiểm tra biến VITE_GITHUB_TOKEN trên Vercel.");
     }
   };
 
@@ -2207,24 +1696,21 @@ export default function Home() {
     const sanitized = newChars.map(sanitizeCharacter);
     setCharacters(sanitized);
     localStorage.setItem("lalapine-custom-characters", JSON.stringify(sanitized));
-    void syncToCloud(sanitized, notifications, tracks, feedbacks);
   };
 
   const handleSaveNotifications = (newNotifs: NotificationItem[]) => {
     setNotifications(newNotifs);
     localStorage.setItem("lalapine-custom-notifications", JSON.stringify(newNotifs));
-    void syncToCloud(characters, newNotifs, tracks, feedbacks);
   };
 
   const handleSaveTracks = (newTracks: Track[]) => {
     setTracks(newTracks);
     localStorage.setItem("lalapine-custom-tracks", JSON.stringify(newTracks));
-    void syncToCloud(characters, notifications, newTracks, feedbacks);
   };
 
-  const handleAddFeedback = (charId: number, authorName: string, content: string) => {
+  const handleAddFeedback = async (charId: number, charName: string, authorName: string, content: string) => {
     const newFb: CharacterFeedback = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `${Date.now()}`,
       characterId: charId,
       authorName,
       content,
@@ -2233,20 +1719,11 @@ export default function Home() {
     const nextList = [newFb, ...feedbacks];
     setFeedbacks(nextList);
     localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
-    void syncToCloud(characters, notifications, tracks, nextList);
+
+    // Đẩy issue lên GitHub công khai
+    void postFeedbackToGitHub(charId, charName, authorName, content);
   };
 
-  const handleDeleteFeedback = (fbId: string) => {
-    if (window.confirm("Xóa lời nhắn này?")) {
-      const nextList = feedbacks.filter((f) => f.id !== fbId);
-      setFeedbacks(nextList);
-      localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
-      void syncToCloud(characters, notifications, tracks, nextList);
-      toast.success("Đã xóa lời nhắn.");
-    }
-  };
-
-  // PHÍM TẮT MỞ STUDIO (Ctrl + Shift + L)
   useEffect(() => { 
     const handler = (event: KeyboardEvent) => { 
       const key = String(event.key || "").toLowerCase(); 
@@ -2276,7 +1753,7 @@ export default function Home() {
           notifications={notifications}
           onSaveNotifications={handleSaveNotifications}
           feedbacks={feedbacks}
-          onDeleteFeedback={handleDeleteFeedback}
+          onCommitToGitHub={handleCommitToGitHub}
         />
       ) : (
         <PublicPage 
