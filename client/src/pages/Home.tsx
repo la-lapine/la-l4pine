@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: ĐÃ XÓA 100% CÁC VÒNG TRÒN LỖI ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: XÓA SẠCH 100% CÁC VÒNG TRÒN ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -118,19 +118,24 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        /* KHẮC PHỤC TRIỆT ĐỂ MỌI VÒNG TRÒN CŨ BỊ LỖI */
-        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
+        /* LỆNH TIÊU DIỆT TOÀN DIỆN MỌI VÒNG TRÒN DƯ THỪA TRÊN TOÀN BỘ TRANG WEB */
+        .hero-orbit, .orbit-one, .orbit-two, .intro-layer, .intro-ripple, .intro-center, .intro-foot,
+        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring, .concentric-ripple,
+        [class*="orbit"], [class*="ripple"] {
           display: none !important;
           opacity: 0 !important;
           animation: none !important;
           visibility: hidden !important;
+          border: none !important;
+          box-shadow: none !important;
+          width: 0 !important;
+          height: 0 !important;
         }
 
-        /* HIỆU ỨNG LOGO XUẤT HIỆN MƯỢT MÀ VÀ NỔI BẬT */
-        @keyframes clean-logo-appear {
+        /* CHỈ GIỮ LẠI LOGO XUẤT HIỆN ĐƠN THUẦN RẤT NỔI BẬT */
+        @keyframes clean-logo-pop {
           0% {
-            transform: scale(0.25);
+            transform: scale(0.2);
             opacity: 0;
             filter: blur(8px);
           }
@@ -142,12 +147,11 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 22px rgba(162, 218, 255, 0.45));
+            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.4));
           }
         }
 
-        /* HIỆU ỨNG HIỆN CHỮ VÀ NÚT BẤM */
-        @keyframes clean-text-appear {
+        @keyframes clean-text-fade {
           0% {
             opacity: 0;
             transform: translateY(12px);
@@ -159,8 +163,8 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         }
       `}</style>
 
-      {/* KHUNG CHỨA LOGO DUY NHẤT (KHÔNG CÓ VÒNG TRÒN NÀO ĐI KÈM) */}
-      <div style={{ position: "relative", width: "120px", height: "120px", display: "grid", placeItems: "center", marginBottom: "1rem", zIndex: 10 }}>
+      {/* VÙNG CHỨA LOGO DUY NHẤT - TUYỆT ĐỐI KHÔNG CÓ BẤT KỲ VÒNG TRÒN NÀO XUNG QUANH */}
+      <div style={{ position: "relative", width: "110px", height: "110px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
@@ -170,13 +174,13 @@ function StartScreen({ onStart }: { onStart: () => void }) {
             objectFit: "contain", 
             position: "relative", 
             zIndex: 10,
-            animation: "clean-logo-appear 1.6s cubic-bezier(0.2, 1, 0.3, 1) both"
+            animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
       {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
-      <div style={{ animation: "clean-text-appear 1.4s ease-out 0.6s both", zIndex: 10 }}>
+      <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
@@ -806,6 +810,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
                 </div>
               </div>
               <div className="hero-art-wrap">
+                {/* ĐÃ XÓA SẠCH CÁC THẺ HERO-ORBIT GÂY RA VÒNG TRÒN LỆCH */}
                 <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
                   {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
                   <div className="hero-art-label">
@@ -1918,7 +1923,7 @@ export default function Home() {
 
   return (
     <>
-      {/* MÀN HÌNH BẮT ĐẦU DUY NHẤT */}
+      {/* MÀN HÌNH BẮT ĐẦU */}
       {!hasEntered && (
         <StartScreen onStart={() => setHasEntered(true)} />
       )}
