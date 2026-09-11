@@ -8,7 +8,6 @@ import {
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { toast } from "sonner";
-import { resolveCharacterColors } from "@shared/characterColors";
 
 // MẬT KHẨU STUDIO DUY NHẤT
 const MASTER_PASSWORD = "jk0807";
@@ -67,6 +66,13 @@ type LoveSpark = { id: number; x: number; y: number; rotation: number; particles
 const createLoveSpark = (clientX: number, clientY: number): LoveSpark => ({ id: Date.now() + Math.round(Math.random() * 1000), x: clientX, y: clientY, rotation: -10 + Math.random() * 20, particles: Array.from({ length: 7 }, (_, index) => ({ id: index, x: 6 + Math.random() * 88, y: 8 + Math.random() * 82, delay: index * 38 + Math.round(Math.random() * 100), rotation: -20 + Math.random() * 40, scale: 0.65 + Math.random() * 0.7 })) });
 const rabbitLogo = "/brand/lalapine-rabbit-logo.png";
 
+// HÀM XỬ LÝ MÀU VÀ DỮ LIỆU AN TOÀN TUYỆT ĐỐI (KHÔNG BAO GIỜ LỖI TO LOWER CASE)
+function resolveColors(c?: any) {
+  const titleColor = String(c?.titleColor || "#eff8ff");
+  const bodyColor = (c?.colorSync ? titleColor : String(c?.bodyColor || "#9db8d4"));
+  return { titleColor, bodyColor };
+}
+
 function sanitizeCharacter(c: any): Character {
   if (!c || typeof c !== "object") {
     return { id: Date.now(), slug: "rabbit", name: "Chú thỏ nhỏ", section: "new", tagsJson: "[]" };
@@ -104,6 +110,179 @@ function safeIsIn(c: Character | null | undefined, targetSection: string): boole
   return safeSectionsOf(c).includes(target);
 }
 
+function tagsOf(character?: Character | null) {
+  if (!character || !character.tagsJson) return [];
+  try { 
+    const value = JSON.parse(character.tagsJson); 
+    return Array.isArray(value) ? value.map((t) => String(t || "").trim()).filter(Boolean) : []; 
+  } catch { 
+    return String(character.tagsJson || "").split(",").map((tag) => String(tag || "").trim()).filter(Boolean); 
+  }
+}
+
+function visitorId() { 
+  const key = "lalapine-visitor"; 
+  try {
+    const existing = localStorage.getItem(key); 
+    if (existing) return existing; 
+    const value = crypto.randomUUID(); 
+    localStorage.setItem(key, value); 
+    return value; 
+  } catch {
+    return "guest-user";
+  }
+}
+
+function sanitizeRichText(value?: string | null) {
+  const raw = value || "";
+  if (!raw) return "";
+  if (!/<[a-z][\s\S]*>/i.test(raw)) {
+    return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
+  }
+  const container = document.createElement("div");
+  container.innerHTML = raw;
+  container.querySelectorAll("script,style,iframe,object,embed,form,meta,link").forEach((node) => node.remove());
+  return container.innerHTML;
+}
+function renderRichText(value?: string | null) { return sanitizeRichText(value) || "Nội dung đang được gieo mầm."; }
+async function fileToDataUrl(file: File) { return await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); }); }
+function encodeStorageUrl(value?: string | null) { if (!value || !value.startsWith("/manus-storage/")) return value || undefined; const key = value.slice("/manus-storage/".length); return `/manus-storage/${key.split("/").map((part) => encodeURIComponent(decodeURIComponent(part))).join("/")}`; }
+
+function SparklesLayer() {
+  const [particles] = useState(() => Array.from({ length: 36 }, (_, index) => ({ id: index, x: Math.random() * 100, duration: 7 + Math.random() * 9, delay: -(Math.random() * 14), drift: -90 + Math.random() * 180, size: .7 + Math.random() * 1.4, tilt: -35 + Math.random() * 70 })));
+  return <div className="particle-field" aria-hidden="true">{particles.map((particle) => <i key={particle.id} style={{ "--x": `${particle.x}%`, "--duration": `${particle.duration}s`, "--delay": `${particle.delay}s`, "--drift": `${particle.drift}px`, "--size": particle.size, "--tilt": `${particle.tilt}deg` } as React.CSSProperties} />)}</div>;
+}
+
+function LoveLayer({ loveSparks }: { loveSparks: LoveSpark[] }) {
+  return <div className="love-sparks" aria-hidden="true">{loveSparks.map((spark) => <span className="love-spark" key={spark.id} style={{ left: spark.x, top: spark.y, transform: `rotate(${spark.rotation}deg)` }}><span className="love-spark__word">Love{spark.particles.map((particle) => <span className="love-spark__glint" key={particle.id} style={{ left: `${particle.x}%`, top: `${particle.y}%`, animationDelay: `${particle.delay}ms`, transform: `rotate(${particle.rotation}deg) scale(${particle.scale})` }}>✦</span>)}</span></span>)}</div>;
+}
+
+function Logo() {
+  return <Link href="/discover" className="brand-lockup" style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}><img src={rabbitLogo} alt="la Lapine" style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}} /><span style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}><strong style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}>la Lapine</strong><em style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}>nàng thỏ mộng mơ</em></span></Link>;
+}
+
+function Header({ onStudio, onNotifications, notificationCount }: { onStudio: () => void; onNotifications: () => void; notificationCount: number }) {
+  const [location] = useLocation();
+  const jumpTo = (anchor: string) => { if (location === "/discover" || location === "/") { document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }); window.history.replaceState({}, "", `/discover#${anchor}`); } else { window.location.href = `/discover#${anchor}`; } };
+  return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
+}
+
+// ==================== MÀN HÌNH BẮT ĐẦU: HIỆU ỨNG POP-UP PHÓNG TO THU NHỎ NGUYÊN BẢN ====================
+function StartScreen({ onStart }: { onStart: () => void }) {
+  return (
+    <div 
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem",
+        textAlign: "center",
+        color: "#edf5ff",
+        overflow: "hidden"
+      }}
+    >
+      <style>{`
+        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
+        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring {
+          display: none !important;
+          opacity: 0 !important;
+          animation: none !important;
+          visibility: hidden !important;
+        }
+
+        @keyframes center-stage-motion {
+          0%, 55% { transform: translateY(40px); }
+          100% { transform: translateY(0); }
+        }
+
+        @keyframes logo-expand-shrink {
+          0% { transform: scale(0.12); opacity: 0; filter: blur(6px); }
+          38% { transform: scale(2.4); opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65)); }
+          58% { transform: scale(2.4); opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65)); }
+          100% { transform: scale(1); opacity: 1; filter: blur(0px) drop-shadow(0 0 18px rgba(162, 218, 255, 0.35)); }
+        }
+
+        @keyframes intro-content-fade {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      <div style={{ 
+        position: "relative", 
+        width: "140px", 
+        height: "140px", 
+        display: "grid", 
+        placeItems: "center", 
+        marginBottom: "0.8rem",
+        animation: "center-stage-motion 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
+        zIndex: 10 
+      }}>
+        <img 
+          src={rabbitLogo} 
+          alt="la Lapine" 
+          style={{ 
+            width: "90px", 
+            height: "90px", 
+            objectFit: "contain", 
+            position: "relative", 
+            zIndex: 20,
+            animation: "logo-expand-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
+          }} 
+        />
+      </div>
+
+      <div style={{ animation: "intro-content-fade 1.5s ease-out 2.4s both", zIndex: 10 }}>
+        <h1 style={{ 
+          fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
+          fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
+          margin: "0 0 0.35rem",
+          letterSpacing: "0.04em",
+          color: "#f1f8ff",
+          textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
+        }}>
+          la Lapine
+        </h1>
+
+        <p style={{ 
+          fontSize: "12px", 
+          color: "#9db8d4", 
+          margin: "0 0 1.8rem",
+          letterSpacing: "0.08em",
+          textTransform: "lowercase",
+          fontFamily: '"DM Mono", monospace',
+          opacity: 0.85
+        }}>
+          không dành cho người dưới 18 tuổi.
+        </p>
+
+        <button 
+          className="primary-button" 
+          onClick={onStart}
+          style={{
+            minHeight: "46px",
+            padding: "0 2.2rem",
+            fontSize: "12.5px",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            borderRadius: "999px",
+            boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)",
+            cursor: "pointer"
+          }}
+        >
+          Bắt đầu hành trình
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ==================== DANH SÁCH BÀI HÁT GỐC ====================
 const defaultTracks: Track[] = [
   { id: 1, title: "southbound", artist: "Artemas", audioUrl: "/audio/Artemas - southbound (official visualizer) - Artemas.mp3" },
   { id: 2, title: "Gimme More", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3" },
@@ -144,87 +323,6 @@ const fallbackCharacters: Character[] = [
   { id: 204, slug: "ky-tich-c", name: "Thỏ Kỳ Tích Ciel", imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=86", caption: "Một kẻ lữ hành mang theo túi hạt giống ánh sáng.", tagsJson: JSON.stringify(["kỳ tích", "adventure", "blue hour"]), externalUrl: "https://character.ai/", description: "Ciel đi qua những cánh đồng chưa có trên bản đồ và gieo ánh sáng ở nơi bạn ấy dừng chân.", backstory: "Mỗi hạt giống trong túi là một lời hứa được giữ lại từ mùa hè cũ.", firstMessage: "Bạn muốn đi cùng mình đến nơi nào trước?", section: "featured", featured: 1, favoriteCount: 174 },
   { id: 205, slug: "mat-trang", name: "Thỏ Mặt Trăng", imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=86", caption: "Demo đang ngủ dưới vầng trăng xanh.", tagsJson: JSON.stringify(["demo", "moon", "coming soon"]), section: "coming", comingSoon: 1, favoriteCount: 0 },
 ];
-
-function tagsOf(character?: Character | null) {
-  if (!character || !character.tagsJson) return [];
-  try { 
-    const value = JSON.parse(character.tagsJson); 
-    return Array.isArray(value) ? value.map((t) => String(t || "").trim()).filter(Boolean) : []; 
-  } catch { 
-    return String(character.tagsJson).split(",").map((tag) => tag.trim()).filter(Boolean); 
-  }
-}
-
-function visitorId() { const key = "lalapine-visitor"; const existing = localStorage.getItem(key); if (existing) return existing; const value = crypto.randomUUID(); localStorage.setItem(key, value); return value; }
-
-function sanitizeRichText(value?: string | null) {
-  const raw = value || "";
-  if (!raw) return "";
-  if (!/<[a-z][\s\S]*>/i.test(raw)) {
-    return raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
-  }
-  const container = document.createElement("div");
-  container.innerHTML = raw;
-  container.querySelectorAll("script,style,iframe,object,embed,form,meta,link").forEach((node) => node.remove());
-  return container.innerHTML;
-}
-function renderRichText(value?: string | null) { return sanitizeRichText(value) || "Nội dung đang được gieo mầm."; }
-async function fileToDataUrl(file: File) { return await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); }); }
-function encodeStorageUrl(value?: string | null) { if (!value || !value.startsWith("/manus-storage/")) return value || undefined; const key = value.slice("/manus-storage/".length); return `/manus-storage/${key.split("/").map((part) => encodeURIComponent(decodeURIComponent(part))).join("/")}`; }
-
-function SparklesLayer() {
-  const [particles] = useState(() => Array.from({ length: 36 }, (_, index) => ({ id: index, x: Math.random() * 100, duration: 7 + Math.random() * 9, delay: -(Math.random() * 14), drift: -90 + Math.random() * 180, size: .7 + Math.random() * 1.4, tilt: -35 + Math.random() * 70 })));
-  return <div className="particle-field" aria-hidden="true">{particles.map((particle) => <i key={particle.id} style={{ "--x": `${particle.x}%`, "--duration": `${particle.duration}s`, "--delay": `${particle.delay}s`, "--drift": `${particle.drift}px`, "--size": particle.size, "--tilt": `${particle.tilt}deg` } as React.CSSProperties} />)}</div>;
-}
-
-function LoveLayer({ loveSparks }: { loveSparks: LoveSpark[] }) {
-  return <div className="love-sparks" aria-hidden="true">{loveSparks.map((spark) => <span className="love-spark" key={spark.id} style={{ left: spark.x, top: spark.y, transform: `rotate(${spark.rotation}deg)` }}><span className="love-spark__word">Love{spark.particles.map((particle) => <span className="love-spark__glint" key={particle.id} style={{ left: `${particle.x}%`, top: `${particle.y}%`, animationDelay: `${particle.delay}ms`, transform: `rotate(${particle.rotation}deg) scale(${particle.scale})` }}>✦</span>)}</span></span>)}</div>;
-}
-
-function Logo() {
-  return <Link href="/discover" className="brand-lockup" style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}><img src={rabbitLogo} alt="la Lapine" style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}} /><span style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}><strong style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}>la Lapine</strong><em style={{fontFamily: '"MTD Black Night", "Cormorant Garamond", serif'}}>nàng thỏ mộng mơ</em></span></Link>;
-}
-
-function Header({ onStudio, onNotifications, notificationCount }: { onStudio: () => void; onNotifications: () => void; notificationCount: number }) {
-  const [location] = useLocation();
-  const jumpTo = (anchor: string) => { if (location === "/discover" || location === "/") { document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }); window.history.replaceState({}, "", `/discover#${anchor}`); } else { window.location.href = `/discover#${anchor}`; } };
-  return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
-}
-
-function StartScreen({ onStart }: { onStart: () => void }) {
-  return (
-    <div 
-      style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "2rem", textAlign: "center", color: "#edf5ff", overflow: "hidden"
-      }}
-    >
-      <div style={{ position: "relative", width: "140px", height: "140px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
-        <img src={rabbitLogo} alt="la Lapine" style={{ width: "90px", height: "90px", objectFit: "contain", position: "relative", zIndex: 20 }} />
-      </div>
-
-      <div style={{ zIndex: 10 }}>
-        <h1 style={{ fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", margin: "0 0 0.35rem", letterSpacing: "0.04em", color: "#f1f8ff", textShadow: "0 0 20px rgba(173, 214, 255, 0.25)" }}>
-          la Lapine
-        </h1>
-
-        <p style={{ fontSize: "12px", color: "#9db8d4", margin: "0 0 1.8rem", letterSpacing: "0.08em", textTransform: "lowercase", fontFamily: '"DM Mono", monospace', opacity: 0.85 }}>
-          không dành cho người dưới 18 tuổi.
-        </p>
-
-        <button 
-          className="primary-button" 
-          onClick={onStart}
-          style={{ minHeight: "46px", padding: "0 2.2rem", fontSize: "12.5px", letterSpacing: "0.12em", textTransform: "uppercase", borderRadius: "999px", boxShadow: "0 0 25px rgba(185, 221, 255, 0.35)", cursor: "pointer" }}
-        >
-          Bắt đầu hành trình
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function MusicPlayer({ tracks }: { tracks: Track[] }) {
   const [expanded, setExpanded] = useState(false);
@@ -372,7 +470,7 @@ function MusicPlayer({ tracks }: { tracks: Track[] }) {
 function CharacterCard({ character, onOpen, favorite, onFavorite }: { character: Character; onOpen: () => void; favorite: boolean; onFavorite: () => void }) {
   const safeChar = sanitizeCharacter(character);
   const tags = tagsOf(safeChar);
-  const { titleColor, bodyColor } = resolveCharacterColors(safeChar);
+  const { titleColor, bodyColor } = resolveColors(safeChar);
 
   return (
     <article 
@@ -435,7 +533,6 @@ function CharacterCard({ character, onOpen, favorite, onFavorite }: { character:
   );
 }
 
-// ==================== CỬA SỔ CHI TIẾT (CÓ MỤC FEEDBACK LỜI NHẮN) ====================
 function DetailModal({ 
   character, 
   onClose, 
@@ -454,9 +551,8 @@ function DetailModal({
   const safeChar = sanitizeCharacter(character);
   const [open, setOpen] = useState("description");
   const [showAccess, setShowAccess] = useState(false);
-  const { titleColor, bodyColor } = resolveCharacterColors(safeChar);
+  const { titleColor, bodyColor } = resolveColors(safeChar);
   
-  // Feedback form
   const [authorName, setAuthorName] = useState("");
   const [fbContent, setFbContent] = useState("");
 
@@ -531,7 +627,6 @@ function DetailModal({
                 <strong style={{ fontSize: "14px", color: "#edf5ff" }}>Hòm thư gửi {safeChar.name} ({charFeedbacks.length})</strong>
               </div>
 
-              {/* Form gửi feedback */}
               <form onSubmit={handleSendFeedback} style={{ display: "grid", gap: "8px", marginBottom: "1rem" }}>
                 <input 
                   value={authorName} 
@@ -551,7 +646,6 @@ function DetailModal({
                 </button>
               </form>
 
-              {/* Danh sách lời nhắn đã gửi */}
               <div style={{ display: "grid", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
                 {charFeedbacks.length > 0 ? (
                   charFeedbacks.map((fb) => (
@@ -584,7 +678,7 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    const cleanInput = (password || "").trim().toLowerCase();
+    const cleanInput = String(password || "").trim().toLowerCase();
     const cleanTarget = String(character?.password || "").trim().toLowerCase();
 
     if (cleanTarget) {
@@ -1089,7 +1183,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const clean = (pass || "").trim();
+    const clean = String(pass || "").trim();
     if (clean === MASTER_PASSWORD) { 
       onUnlock(); 
       return; 
@@ -1330,7 +1424,7 @@ function OwnerWorkspace({
       firstMessage: c.firstMessage || "", 
       externalUrl: c.externalUrl || "", 
       accessTitle: c.accessTitle || "", 
-      password: c.password || "",
+      password: c.password || "", 
       passwordHint: c.passwordHint || "", 
       clearPassword: false,
       hasPassword: Boolean(c.passwordProtected || c.password)
@@ -1891,7 +1985,7 @@ function OwnerWorkspace({
 
 function CharacterPreviewModal({ form, onClose }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number; description: string; backstory: string; firstMessage: string; accessTitle: string; sections: string[] }; onClose: () => void }) {
   const [zone, setZone] = useState(form.sections[0] || "new");
-  const { titleColor, bodyColor } = resolveCharacterColors(form);
+  const { titleColor, bodyColor } = resolveColors(form);
   const zoneName = zone === "new" ? "Thỏ Múp Sữa" : zone === "featured" ? "Thỏ Kỳ Tích" : "Thỏ Mặt Trăng";
   return (
     <div className="modal-layer" onClick={onClose}>
@@ -1931,7 +2025,7 @@ function CharacterPreviewModal({ form, onClose }: { form: { name: string; captio
 
 function PreviewZone({ form, zone }: { form: { name: string; caption: string; imageUrl: string; tags: string; titleColor?: string; bodyColor?: string; colorSync?: number }; zone: string }) {
   const image = form.imageUrl || rabbitLogo; 
-  const { titleColor, bodyColor } = resolveCharacterColors(form);
+  const { titleColor, bodyColor } = resolveColors(form);
   if (zone === "coming") return <div className="preview-coming-card" style={{ "--title-color": titleColor, "--body-color": bodyColor } as React.CSSProperties}><span className="preview-coming-art"><img src={image} alt={form.name || "Ảnh"} /></span><span><strong>{form.name || "Tên"}</strong><small>{form.caption}</small></span><ArrowUpRight size={16} /></div>;
   return (
     <article 
@@ -2128,7 +2222,6 @@ export default function Home() {
     void syncToCloud(characters, notifications, newTracks, feedbacks);
   };
 
-  // HÀM THÊM FEEDBACK TỪ NGƯỜI DÙNG
   const handleAddFeedback = (charId: number, authorName: string, content: string) => {
     const newFb: CharacterFeedback = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -2156,7 +2249,7 @@ export default function Home() {
   // PHÍM TẮT MỞ STUDIO (Ctrl + Shift + L)
   useEffect(() => { 
     const handler = (event: KeyboardEvent) => { 
-      const key = event.key.toLowerCase(); 
+      const key = String(event.key || "").toLowerCase(); 
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { 
         event.preventDefault(); 
         setStudio(false); 
