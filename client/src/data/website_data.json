@@ -82,5 +82,186 @@
       "pinned": true
     }
   ],
-  "tracks": []
+  "tracks": [
+    {
+      "id": 1,
+      "title": "southbound",
+      "artist": "Artemas",
+      "audioUrl": "/audio/Artemas - southbound (official visualizer) - Artemas.mp3"
+    },
+    {
+      "id": 2,
+      "title": "Gimme More",
+      "artist": "Britney Spears",
+      "audioUrl": "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3"
+    },
+    {
+      "id": 3,
+      "title": "Toxic",
+      "artist": "Britney Spears",
+      "audioUrl": "/audio/Britney Spears - Toxic (Official HD Video) - BritneySpearsVEVO.mp3"
+    },
+    {
+      "id": 4,
+      "title": "Everything is romantic",
+      "artist": "Charli xcx",
+      "audioUrl": "/audio/Charli xcx - Everything is romantic (official lyric video) - Charli xcx.mp3"
+    },
+    {
+      "id": 5,
+      "title": "LET THE WORLD BURN",
+      "artist": "Chris Grey",
+      "audioUrl": "/audio/Chris Grey - LET THE WORLD BURN (Official Lyric Video) - Chris Grey.mp3"
+    },
+    {
+      "id": 6,
+      "title": "Dark Paradise",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Dark Paradise - Lana Del Rey.mp3"
+    },
+    {
+      "id": 7,
+      "title": "Training Season (Live)",
+      "artist": "Dua Lipa",
+      "audioUrl": "/audio/Dua Lipa - Training Season (Live from the Royal Albert Hall) [Official Performance Video] - Dua Lipa.mp3"
+    },
+    {
+      "id": 8,
+      "title": "UNETHICAL",
+      "artist": "Faouzia",
+      "audioUrl": "/audio/Faouzia - UNETHICAL (Official Music Video) - Faouzia.mp3"
+    },
+    {
+      "id": 9,
+      "title": "On The Floor",
+      "artist": "Jennifer Lopez, Pitbull",
+      "audioUrl": "/audio/Jennifer Lopez, Pitbull - On The Floor (Official Music Video) - JenniferLopezVEVO.mp3"
+    },
+    {
+      "id": 10,
+      "title": "Born To Die",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Lana Del Rey - Born To Die - LanaDelReyVEVO.mp3"
+    },
+    {
+      "id": 11,
+      "title": "Brooklyn Baby",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Lana Del Rey - Brooklyn Baby (Official Audio) - LanaDelReyVEVO.mp3"
+    },
+    {
+      "id": 12,
+      "title": "Doin' Time",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Lana Del Rey - Doin' Time - LanaDelReyVEVO.mp3"
+    },
+    {
+      "id": 13,
+      "title": "Ultraviolence",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Lana Del Rey - Ultraviolence (Audio) - LanaDelReyVEVO.mp3"
+    },
+    {
+      "id": 14,
+      "title": "Legendary Lovers",
+      "artist": "Katy Perry",
+      "audioUrl": "/audio/Legendary Lovers - Katy Perry.mp3"
+    },
+    {
+      "id": 15,
+      "title": "When Did You Get Hot",
+      "artist": "Sabrina Carpenter",
+      "audioUrl": "/audio/Sabrina Carpenter - When Did You Get Hot (Official Lyric Video) - SabrinaCarpenterVEVO.mp3"
+    },
+    {
+      "id": 16,
+      "title": "Sad Girl",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Sad Girl - Lana Del Rey.mp3"
+    },
+    {
+      "id": 17,
+      "title": "Salvatore",
+      "artist": "Lana Del Rey",
+      "audioUrl": "/audio/Salvatore - Lana Del Rey.mp3"
+    },
+    {
+      "id": 18,
+      "title": "Can't Remember to Forget You",
+      "artist": "Shakira ft. Rihanna",
+      "audioUrl": "/audio/Shakira - Can't Remember to Forget You (Official Video) ft. Rihanna - shakiraVEVO.mp3"
+    },
+    {
+      "id": 19,
+      "title": "back to friends",
+      "artist": "sombr",
+      "audioUrl": "/audio/sombr - back to friends (official video) - sombr.mp3"
+    },
+    {
+      "id": 20,
+      "title": "undressed",
+      "artist": "sombr",
+      "audioUrl": "/audio/sombr - undressed (official lyric video) - sombr.mp3"
+    },
+    {
+      "id": 21,
+      "title": "we never dated",
+      "artist": "sombr",
+      "audioUrl": "/audio/sombr - we never dated (official lyric video) - sombr.mp3"
+    },
+    {
+      "id": 22,
+      "title": "Moth To A Flame",
+      "artist": "Swedish House Mafia, The Weeknd",
+      "audioUrl": "/audio/Swedish House Mafia and The Weeknd - Moth To A Flame (Official Lyric Video) - SHMVEVO.mp3"
+    },
+    {
+      "id": 23,
+      "title": "A Little Death",
+      "artist": "The Neighbourhood",
+      "audioUrl": "/audio/The Neighbourhood - A Little Death (Official Audio) - TheNeighbourhoodVEVO.mp3"
+    },
+    {
+      "id": 24,
+      "title": "Afraid",
+      "artist": "The Neighbourhood",
+      "audioUrl": "/audio/The Neighbourhood - Afraid (Official Audio) - TheNeighbourhoodVEVO.mp3"
+    },
+    {
+      "id": 25,
+      "title": "Sweater Weather",
+      "artist": "The Neighbourhood",
+      "audioUrl": "/audio/The Neighbourhood - Sweater Weather (Official Video) - TheNeighbourhoodVEVO.mp3"
+    },
+    {
+      "id": 26,
+      "title": "After Hours",
+      "artist": "The Weeknd",
+      "audioUrl": "/audio/The Weeknd - After Hours (Audio) - The Weeknd.mp3"
+    },
+    {
+      "id": 27,
+      "title": "Call Out My Name",
+      "artist": "The Weeknd",
+      "audioUrl": "/audio/The Weeknd - Call Out My Name (Official Audio) - The Weeknd.mp3"
+    },
+    {
+      "id": 28,
+      "title": "House Of Balloons / Glass Table Girls",
+      "artist": "The Weeknd",
+      "audioUrl": "/audio/The Weeknd - House Of Balloons _ Glass Table Girls - The Weeknd.mp3"
+    },
+    {
+      "id": 29,
+      "title": "One Of The Girls",
+      "artist": "The Weeknd, JENNIE, Lily-Rose Depp",
+      "audioUrl": "/audio/The Weeknd, JENNIE, Lily-Rose Depp - One Of The Girls (Official Video) - TheWeekndVEVO.mp3"
+    },
+    {
+      "id": 30,
+      "title": "The Abyss",
+      "artist": "The Weeknd, Lana Del Rey",
+      "audioUrl": "/audio/The Weeknd, Lana Del Rey - The Abyss (Audio) - TheWeekndVEVO.mp3"
+    }
+  ]
 }
