@@ -98,7 +98,7 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// ==================== MÀN HÌNH BẮT ĐẦU: XÓA SẠCH 100% CÁC VÒNG TRÒN ====================
+// ==================== MÀN HÌNH BẮT ĐẦU: PHÓNG TO Ở GIỮA, THU NHỎ NHÍCH LÊN, CÁC NỘI DUNG GẦN NHAU ====================
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -106,85 +106,124 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "radial-gradient(circle at 50% 45%, #0c254a 0%, #06122a 68%, #030814 100%)",
+        background: "radial-gradient(circle at 50% 50%, #0d2853 0%, #06122a 68%, #030814 100%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "2rem",
+        padding: "1.5rem",
         textAlign: "center",
         color: "#edf5ff",
         overflow: "hidden"
       }}
     >
       <style>{`
-        /* LỆNH TIÊU DIỆT TOÀN DIỆN MỌI VÒNG TRÒN DƯ THỪA TRÊN TOÀN BỘ TRANG WEB */
-        .hero-orbit, .orbit-one, .orbit-two, .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring, .concentric-ripple,
-        [class*="orbit"], [class*="ripple"] {
-          display: none !important;
-          opacity: 0 !important;
-          animation: none !important;
-          visibility: hidden !important;
-          border: none !important;
-          box-shadow: none !important;
-          width: 0 !important;
-          height: 0 !important;
+        /* KHUNG CHỨA DI CHUYỂN: Ở GIỮA CHÍNH TÂM (translateY 60px) RỒI MỚI NHÍCH LÊN (translateY 0) */
+        @keyframes center-stage-rise {
+          0%, 52% {
+            transform: translateY(60px);
+          }
+          100% {
+            transform: translateY(0);
+          }
         }
 
-        /* CHỈ GIỮ LẠI LOGO XUẤT HIỆN ĐƠN THUẦN RẤT NỔI BẬT */
-        @keyframes clean-logo-pop {
+        /* LOGO: TỪ NHỎ ➔ PHÓNG TO CỰC ĐẠI GIỮA MÀN HÌNH ➔ THU NHỎ LẠI */
+        @keyframes logo-expand-then-shrink {
           0% {
-            transform: scale(0.2);
+            transform: scale(0.15);
             opacity: 0;
-            filter: blur(8px);
+            filter: blur(6px);
           }
-          65% {
-            transform: scale(1.08);
+          36%, 52% {
+            transform: scale(2.4);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.65));
+            filter: blur(0px) drop-shadow(0 0 35px rgba(162, 218, 255, 0.7));
           }
           100% {
             transform: scale(1);
             opacity: 1;
-            filter: blur(0px) drop-shadow(0 0 20px rgba(162, 218, 255, 0.4));
+            filter: blur(0px) drop-shadow(0 0 18px rgba(162, 218, 255, 0.35));
           }
         }
 
-        @keyframes clean-text-fade {
+        /* GỢN SÓNG: PHÁT TÁN TỪ CHÍNH GIỮA TÂM LOGO, MỎNG NHẸ VÀ DỊU DÀNG */
+        @keyframes soft-logo-wave {
+          0% {
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0.45;
+          }
+          45% {
+            opacity: 0.2;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(4.5);
+            opacity: 0;
+          }
+        }
+
+        /* NỘI DUNG CHỮ VÀ NÚT XUẤT HIỆN SAU KHI LOGO ĐÃ NHÍCH LÊN */
+        @keyframes text-reveal-smooth {
           0% {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(8px);
           }
           100% {
             opacity: 1;
             transform: translateY(0);
           }
         }
+
+        .concentric-wave {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          border: 1px solid rgba(173, 214, 255, 0.3);
+          background: radial-gradient(circle, rgba(173, 214, 255, 0.08) 0%, transparent 70%);
+          box-shadow: 0 0 16px rgba(142, 208, 255, 0.2);
+          pointer-events: none;
+        }
       `}</style>
 
-      {/* VÙNG CHỨA LOGO DUY NHẤT - TUYỆT ĐỐI KHÔNG CÓ BẤT KỲ VÒNG TRÒN NÀO XUNG QUANH */}
-      <div style={{ position: "relative", width: "110px", height: "110px", display: "grid", placeItems: "center", marginBottom: "0.8rem", zIndex: 10 }}>
+      {/* KHUNG MẸ CHỨA SÓNG VÀ LOGO: ĐỒNG TÂM TUYỆT ĐỐI, GẦN SÁT TIÊU ĐỀ */}
+      <div style={{ 
+        position: "relative", 
+        width: "120px", 
+        height: "120px", 
+        display: "grid", 
+        placeItems: "center", 
+        marginBottom: "0.25rem", // Thu hẹp khoảng cách với tên trang web
+        animation: "center-stage-rise 2.8s cubic-bezier(0.2, 1, 0.3, 1) both",
+        zIndex: 10 
+      }}>
+        {/* 2 Vòng sóng mỏng nhẹ phát ra từ đúng tâm logo */}
+        <div className="concentric-wave" style={{ animation: "soft-logo-wave 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 0.6s" }} />
+        <div className="concentric-wave" style={{ animation: "soft-logo-wave 4.2s cubic-bezier(0, 0.2, 0.8, 1) infinite 2.4s" }} />
+
+        {/* Logo phóng to rồi thu nhỏ */}
         <img 
           src={rabbitLogo} 
           alt="la Lapine" 
           style={{ 
-            width: "95px", 
-            height: "95px", 
+            width: "90px", 
+            height: "90px", 
             objectFit: "contain", 
             position: "relative", 
-            zIndex: 10,
-            animation: "clean-logo-pop 1.5s cubic-bezier(0.2, 1, 0.3, 1) both"
+            zIndex: 20,
+            animation: "logo-expand-then-shrink 2.8s cubic-bezier(0.2, 1, 0.3, 1) both"
           }} 
         />
       </div>
 
-      {/* TÊN PAGE, NOTE VÀ NÚT BẤM */}
-      <div style={{ animation: "clean-text-fade 1.4s ease-out 0.6s both", zIndex: 10 }}>
+      {/* NỘI DUNG TẬP TRUNG GẦN NHAU RẤT GỌN GÀNG */}
+      <div style={{ animation: "text-reveal-smooth 1.5s ease-out 2.2s both", zIndex: 10 }}>
         <h1 style={{ 
           fontFamily: '"MTD Black Night", "Playfair Display", "Cormorant Garamond", serif', 
           fontSize: "clamp(2.4rem, 5.5vw, 3.6rem)", 
-          margin: "0 0 0.35rem",
+          margin: "0 0 0.2rem", // Gần sát dòng cảnh báo bên dưới
           letterSpacing: "0.04em",
           color: "#f1f8ff",
           textShadow: "0 0 20px rgba(173, 214, 255, 0.25)"
@@ -195,7 +234,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         <p style={{ 
           fontSize: "12px", 
           color: "#9db8d4", 
-          margin: "0 0 1.8rem",
+          margin: "0 0 1.4rem", // Gần sát nút bấm
           letterSpacing: "0.08em",
           textTransform: "lowercase",
           fontFamily: '"DM Mono", monospace',
@@ -208,8 +247,8 @@ function StartScreen({ onStart }: { onStart: () => void }) {
           className="primary-button" 
           onClick={onStart}
           style={{
-            minHeight: "46px",
-            padding: "0 2.4rem",
+            minHeight: "45px",
+            padding: "0 2.2rem",
             fontSize: "12.5px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -810,7 +849,6 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
                 </div>
               </div>
               <div className="hero-art-wrap">
-                {/* ĐÃ XÓA SẠCH CÁC THẺ HERO-ORBIT GÂY RA VÒNG TRÒN LỆCH */}
                 <div className="hero-art rabbit-hero latest-rabbit" onClick={() => latest && setSelected(latest)}>
                   {latest?.imageUrl ? <img src={latest.imageUrl} alt={latest.name || "Nhân vật mới nhất"} /> : <div className="image-placeholder">☾</div>}
                   <div className="hero-art-label">
@@ -866,6 +904,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
             </section>
           )}
 
+          {/* TRANG CHỦ: ĐÃ XÓA SỐ 01 Ở ĐƯỜNG PHÂN CÁCH */}
           {location !== "/meadow" && (
             <section className="archive-section">
               <div className="archive-rule"><div style={{ gridColumn: "1 / -1" }} /></div>
@@ -888,6 +927,7 @@ function PublicPage({ characters, onStudio }: { characters: Character[]; onStudi
             </section>
           )}
 
+          {/* TRANG THỎ CHƯA RA: ĐÃ XÓA SỐ 03 VÀ DÒNG "NOT YET BUT SOON" */}
           {location === "/meadow" && (
             <section className="archive-section coming-only" id="coming">
               <div className="archive-rule"><div style={{ gridColumn: "1 / -1" }} /></div>
