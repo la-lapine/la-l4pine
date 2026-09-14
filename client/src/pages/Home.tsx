@@ -256,9 +256,6 @@ const defaultTracks: Track[] = [
 const fallbackCharacters: Character[] = [
   { id: 201, slug: "mup-sua", name: "Thỏ Múp Sữa", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=86", caption: "Một chiếc bánh sữa mềm đi lạc vào đồng cỏ xanh.", tagsJson: JSON.stringify(["mới ra lò", "mềm", "ấm áp"]), externalUrl: "https://character.ai/", description: "Múp Sữa thích những buổi chiều có nắng nhạt và một chiếc khăn len vừa đủ ấm.", backstory: "Bạn ấy được tìm thấy trong một hộp sữa rỗng, bên cạnh một bông cỏ bốn lá.", firstMessage: "Bạn có muốn chia đôi chiếc bánh này không?", section: "new", favoriteCount: 128 },
   { id: 202, slug: "ky-tich-a", name: "Thỏ Kỳ Tích Aster", imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=86", caption: "Người giữ những điều nhỏ bé nhưng không thể giải thích.", tagsJson: JSON.stringify(["kỳ tích", "a-z", "phiêu lưu"]), externalUrl: "https://character.ai/", description: "Aster luôn xuất hiện trước một khoảnh khắc kỳ diệu, như thể bạn ấy đã biết từ lâu.", backstory: "Trong cuốn sổ của Aster có tên của mọi người từng tin vào điều không thể.", firstMessage: "Mình nghĩ hôm nay có thể xảy ra một điều rất đẹp.", section: "featured", featured: 1, favoriteCount: 246 },
-  { id: 203, slug: "ky-tich-b", name: "Thỏ Kỳ Tích Beryl", imageUrl: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=900&q=86", caption: "Cô thủ thư gom những phép màu vào từng trang sách.", tagsJson: JSON.stringify(["kỳ tích", "bookish", "quiet"]), externalUrl: "https://character.ai/", description: "Beryl biết cuốn sách nào sẽ tìm thấy bạn trước khi bạn biết mình đang cần nó.", backstory: "Beryl mở một thư viện chỉ dành cho những người đang đứng trước ngã rẽ.", firstMessage: "Mình đã đánh dấu trang này cho bạn rồi.", section: "featured", featured: 1, favoriteCount: 89 },
-  { id: 204, slug: "ky-tich-c", name: "Thỏ Kỳ Tích Ciel", imageUrl: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=900&q=86", caption: "Một kẻ lữ hành mang theo túi hạt giống ánh sáng.", tagsJson: JSON.stringify(["kỳ tích", "adventure", "blue hour"]), externalUrl: "https://character.ai/", description: "Ciel đi qua những cánh đồng chưa có trên bản đồ và gieo ánh sáng ở nơi bạn ấy dừng chân.", backstory: "Mỗi hạt giống trong túi là một lời hứa được giữ lại từ mùa hè cũ.", firstMessage: "Bạn muốn đi cùng mình đến nơi nào trước?", section: "featured", featured: 1, favoriteCount: 174 },
-  { id: 205, slug: "mat-trang", name: "Thỏ Mặt Trăng", imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=86", caption: "Demo đang ngủ dưới vầng trăng xanh.", tagsJson: JSON.stringify(["demo", "moon", "coming soon"]), section: "coming", comingSoon: 1, favoriteCount: 0 },
 ];
 
 function MusicPlayer({ tracks }: { tracks: Track[] }) {
@@ -531,8 +528,22 @@ function DetailModal({
               {tagsOf(safeChar).map((tag) => <span className="tag-chip" key={tag}>#{tag}</span>)}
             </div>
             
+            {/* ĐÃ SỬA: NẾU KHÔNG CÓ PASS THÌ BẤM VÀO LÀ BAY THẲNG SANG LINK, CÓ PASS MỚI HIỆN BẢNG NHẬP PASS */}
             <div className="detail-actions">
-              <button className="primary-button" onClick={() => setShowAccess(true)} disabled={!safeChar.externalUrl}>
+              <button 
+                className="primary-button" 
+                onClick={() => {
+                  const hasPass = Boolean(safeChar.password && String(safeChar.password).trim());
+                  if (hasPass) {
+                    setShowAccess(true);
+                  } else {
+                    if (safeChar.externalUrl) {
+                      window.open(safeChar.externalUrl, "_blank", "noopener,noreferrer");
+                    }
+                  }
+                }} 
+                disabled={!safeChar.externalUrl}
+              >
                 Mở cửa trái tim <ArrowUpRight size={15} />
               </button>
               <button className={`secondary-button ${favorite ? "is-favorite" : ""}`} onClick={onFavorite}>
@@ -1087,7 +1098,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   return (
     <div className="modal-layer">
       <div className="modal-panel admin-gate">
-        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
+        <button className="icon-button modal-close" onClick={onClose}><X size={18} /></button>
         <img src={rabbitLogo} alt="" className="gate-rabbit" />
         <span className="eyebrow">private studio / owner only</span>
         <h2>Vào phòng cỏ riêng</h2>
@@ -1144,6 +1155,7 @@ function OwnerWorkspace({
   const [confirmDelete, setConfirmDelete] = useState<Character | null>(null);
   const [studioTab, setStudioTab] = useState("characters");
   const [isPushing, setIsPushing] = useState(false);
+  const uploadAsset = trpc.owner.uploadAsset.useMutation();
 
   const safeChars = useMemo(() => characters.map(sanitizeCharacter), [characters]);
   const systemAvailableTags = useMemo(() => {
@@ -1332,7 +1344,6 @@ function OwnerWorkspace({
         </nav>
 
         <div style={{ marginTop: "auto", padding: "1rem 0.4rem", display: "flex", flexDirection: "column", gap: "8px" }}>
-          {/* NÚT PUSH LÊN GITHUB */}
           <button 
             type="button" 
             onClick={handlePushToGitHub}
@@ -1509,9 +1520,36 @@ function OwnerWorkspace({
               <section className="notification-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <span className="eyebrow" style={{ color: theme.textMuted }}>broadcast / all visitors</span>
                 <h3 style={{ color: theme.textMain, margin: "0.3rem 0 1rem" }}>{editingNotifId ? "Sửa thông báo" : "Gửi thông báo mới"}</h3>
+                
                 <input value={noticeTitle} onChange={(event) => setNoticeTitle(event.target.value)} placeholder="Tiêu đề" style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                 <textarea rows={4} value={noticeBody} onChange={(event) => setNoticeBody(event.target.value)} placeholder="Nội dung thông báo…" style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", marginBottom: "10px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                <button className="primary-button" style={{ width: "100%" }} onClick={handleSendNotification}>{editingNotifId ? "Cập nhật" : "Gửi thông báo"} <Bell size={15} /></button>
+                
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button className="primary-button" style={{ flex: 1, minHeight: "42px" }} disabled={!noticeBody.trim()} onClick={handleSendNotification}>
+                    {editingNotifId ? "Cập nhật" : "Gửi thông báo"} <Bell size={15} />
+                  </button>
+                  {editingNotifId && (
+                    <button className="secondary-button" onClick={() => { setEditingNotifId(null); setNoticeTitle("Một lời nhắn từ đồng cỏ"); setNoticeBody(""); }} style={{ borderColor: theme.cardBorder, color: theme.textMain, minHeight: "42px" }}>Hủy</button>
+                  )}
+                </div>
+
+                <div style={{ marginTop: "1.8rem", borderTop: `1px solid ${theme.cardBorder}`, paddingTop: "1rem" }}>
+                  <span className="eyebrow" style={{ color: theme.textMuted }}>Lịch sử ({pastNotifications.length})</span>
+                  <div style={{ display: "grid", gap: ".5rem", marginTop: ".6rem", maxHeight: "280px", overflowY: "auto" }}>
+                    {pastNotifications.map((item) => (
+                      <div key={item.id} style={{ padding: ".6rem .8rem", border: `1px solid ${editingNotifId === item.id ? '#9ecaff' : theme.cardBorder}`, borderRadius: "8px", background: editingNotifId === item.id ? "rgba(173,214,255,0.15)" : theme.inputBg }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <strong style={{ color: theme.textMain, fontSize: ".85rem" }}>{item.title}</strong>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <button onClick={() => handleEditNotif(item)} style={{ background: "none", border: 0, color: theme.textMuted, cursor: "pointer", padding: "2px" }} title="Sửa"><Edit2 size={13} /></button>
+                            <button onClick={() => handleDeleteNotif(item.id)} style={{ background: "none", border: 0, color: "#e29aab", cursor: "pointer", padding: "2px" }} title="Xóa"><Trash2 size={13} /></button>
+                          </div>
+                        </div>
+                        <p style={{ margin: ".25rem 0", color: theme.textMuted, fontSize: ".75rem", lineHeight: 1.6 }}>{item.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </section>
             )}
 
@@ -1519,45 +1557,63 @@ function OwnerWorkspace({
             {studioTab === "playlist" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                  <h2 style={{ color: theme.textMain, margin: 0 }}>Quản lý âm thanh ({tracks.length})</h2>
-                  <button type="button" onClick={handleResetDefaultTracks} className="secondary-button" style={{ fontSize: "11px" }}>Khôi phục 30 bài gốc</button>
+                  <h2 style={{ color: theme.textMain, margin: 0 }}>Playlist ({tracks.length})</h2>
+                  <button type="button" onClick={handleResetDefaultTracks} className="secondary-button" style={{ fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMuted }}>Khôi phục gốc</button>
                 </div>
+                
+                {editingTrack ? (
+                  <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
+                    <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Tên bài hát..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="Đường dẫn file (/audio/...)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu</button>
+                    <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain, marginLeft: "8px" }}>Hủy</button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
+                    <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn (/audio/file.mp3)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
+                  </form>
+                )}
+
                 <div style={{ display: "grid", gap: "0.5rem", maxHeight: "320px", overflowY: "auto" }}>
                   {tracks.map((track, index) => (
-                    <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
+                    <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
                       <span style={{ color: theme.textMain, fontSize: "12.5px" }}>0{index + 1}. {track.title}</span>
-                      <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); setEditUrl(track.audioUrl); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
+                        <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* TAB TAGS */}
             {studioTab === "tags" && (
               <section className="editor-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <span className="eyebrow" style={{ color: theme.textMuted }}>tags / đồng cỏ</span>
                 <h2 style={{ color: theme.textMain, margin: "0.3rem 0 0.8rem" }}>Quản lý tags</h2>
-                <p style={{ color: theme.textMuted, fontSize: "12px", marginBottom: "1rem" }}>Tags được tạo tự động từ hồ sơ thỏ.</p>
               </section>
             )}
 
-            {/* DANH SÁCH THỎ BÊN PHẢI */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
-                  <span className="eyebrow" style={{ color: theme.textMuted }}>catalog / {safeChars.length} hồ sơ</span>
+                  <span className="eyebrow" style={{ color: theme.textMuted }}>catalog / {characters.length} hồ sơ</span>
                   <h2 style={{ color: theme.textMain, margin: "0.2rem 0" }}>Đang có trong cỏ</h2>
                 </div>
                 <div style={{ display: "grid", gap: "0.6rem", maxHeight: "650px", overflowY: "auto" }}>
-                  {safeChars.map((character) => (
+                  {characters.map((character) => (
                     <div key={character.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: editing?.id === character.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "10px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <img src={character.imageUrl || rabbitLogo} alt="" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "8px", background: "#0c2650" }} />
                         <strong style={{ color: theme.textMain, fontSize: "13px" }}>{character.name}</strong>
                       </div>
                       <div style={{ display: "flex", gap: "6px" }}>
-                        <button className="secondary-button" onClick={() => startEdit(character)} style={{ padding: "4px 10px", fontSize: "11px" }}>Sửa</button>
+                        <button className="secondary-button" onClick={() => startEdit(character)} style={{ padding: "4px 10px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
                         <button className="icon-button danger" onClick={() => setConfirmDelete(character)} style={{ width: "28px", height: "28px" }}>×</button>
                       </div>
                     </div>
@@ -1618,7 +1674,6 @@ export default function Home() {
   const [studio, setStudio] = useState(false); 
   const [hasEntered, setHasEntered] = useState(false);
 
-  // 1. Nhân vật: Ưu tiên localStorage -> Rồi đến file website_data.json trên GitHub -> Cuối cùng mới đến Demo
   const [characters, setCharacters] = useState<Character[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-characters");
@@ -1627,44 +1682,34 @@ export default function Home() {
         if (Array.isArray(parsed) && parsed.length) return parsed.map(sanitizeCharacter);
       }
     } catch {}
-
-    // ĐỌC TRỰC TIẾP TỪ FILE GITHUB
     if (websiteData && Array.isArray(websiteData.characters) && websiteData.characters.length > 0) {
       return websiteData.characters.map(sanitizeCharacter);
     }
-
     return fallbackCharacters.map(sanitizeCharacter);
   });
 
-  // 2. Thông báo: Đọc trực tiếp từ file GitHub
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-notifications");
       if (saved) return JSON.parse(saved);
     } catch {}
-
     if (websiteData && Array.isArray(websiteData.notifications) && websiteData.notifications.length > 0) {
       return websiteData.notifications;
     }
-
     return [];
   });
 
-  // 3. Playlist bài hát: Đọc trực tiếp từ file GitHub
   const [tracks, setTracks] = useState<Track[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-tracks");
       if (saved) return JSON.parse(saved);
     } catch {}
-
     if (websiteData && Array.isArray((websiteData as any).tracks) && (websiteData as any).tracks.length > 0) {
       return (websiteData as any).tracks;
     }
-
     return defaultTracks;
   });
 
-  // 4. Lời nhắn / Feedback cho nhân vật
   const [feedbacks, setFeedbacks] = useState<CharacterFeedback[]>(() => {
     try {
       const saved = localStorage.getItem("lalapine-custom-feedbacks");
@@ -1683,7 +1728,6 @@ export default function Home() {
     localStorage.setItem("lalapine-read-notifications", JSON.stringify(next));
   };
 
-  // Nạp feedbacks công khai từ GitHub Issues khi vào web
   useEffect(() => {
     async function loadGitHubFeedbacks() {
       const gitFeedbacks = await fetchFeedbacksFromGitHub();
@@ -1695,7 +1739,6 @@ export default function Home() {
     loadGitHubFeedbacks();
   }, []);
 
-  // Hàm commit thẳng lên GitHub từ Studio
   const handleCommitToGitHub = async () => {
     const payload = {
       characters: characters.map(sanitizeCharacter),
@@ -1740,8 +1783,6 @@ export default function Home() {
     const nextList = [newFb, ...feedbacks];
     setFeedbacks(nextList);
     localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
-
-    // Đẩy issue lên GitHub công khai
     void postFeedbackToGitHub(charId, charName, authorName, content);
   };
 
