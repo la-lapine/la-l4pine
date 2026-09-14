@@ -487,6 +487,8 @@ function DetailModal({
   const [showAccess, setShowAccess] = useState(false);
   const { titleColor, bodyColor } = resolveColors(safeChar);
   
+  const isComingSoon = safeIsIn(safeChar, "coming") || safeChar.comingSoon === 1;
+
   const [authorName, setAuthorName] = useState("");
   const [fbContent, setFbContent] = useState("");
 
@@ -528,11 +530,12 @@ function DetailModal({
               {tagsOf(safeChar).map((tag) => <span className="tag-chip" key={tag}>#{tag}</span>)}
             </div>
             
-            {/* ĐÃ SỬA: NẾU KHÔNG CÓ PASS THÌ BẤM VÀO LÀ BAY THẲNG SANG LINK, CÓ PASS MỚI HIỆN BẢNG NHẬP PASS */}
+            {/* ĐÃ SỬA: NẾU LÀ THỎ CHƯA RA (COMING SOON) THÌ NÚT BẤM BỊ KHÓA, KHÔNG MỞ LINK */}
             <div className="detail-actions">
               <button 
                 className="primary-button" 
                 onClick={() => {
+                  if (isComingSoon) return;
                   const hasPass = Boolean(safeChar.password && String(safeChar.password).trim());
                   if (hasPass) {
                     setShowAccess(true);
@@ -542,9 +545,11 @@ function DetailModal({
                     }
                   }
                 }} 
-                disabled={!safeChar.externalUrl}
+                disabled={!safeChar.externalUrl || isComingSoon}
+                title={isComingSoon ? "Chú thỏ đang ủ mầm, liên kết tạm khóa" : ""}
+                style={{ opacity: isComingSoon ? 0.5 : 1, cursor: isComingSoon ? "not-allowed" : "pointer" }}
               >
-                Mở cửa trái tim <ArrowUpRight size={15} />
+                {isComingSoon ? "Đang ủ mầm (Khóa)" : "Mở cửa trái tim"} <ArrowUpRight size={15} />
               </button>
               <button className={`secondary-button ${favorite ? "is-favorite" : ""}`} onClick={onFavorite}>
                 <Heart size={15} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Đã lưu" : "Lưu lại"}
@@ -995,7 +1000,7 @@ function NotificationModal({ notifications, readIds, onRead, onClose }: { notifi
               {selected.body}
             </div>
             <span className="notification-date" style={{ marginTop: "1rem", display: "block", color: "#7898bd", fontSize: "11px" }}>
-              {new Date(selected.publishedAt).toLocaleString("vi-VN")}{selected.pinned ? " · ★ Đã ghim" : ""}
+              {new Date(selected.publishedAt).toLocaleString("vi-VN")}{selected.pinned ? " · ★ Ghim" : ""}
             </span>
           </div>
         ) : (
@@ -1098,7 +1103,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   return (
     <div className="modal-layer">
       <div className="modal-panel admin-gate">
-        <button className="icon-button modal-close" onClick={onClose}><X size={18} /></button>
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
         <img src={rabbitLogo} alt="" className="gate-rabbit" />
         <span className="eyebrow">private studio / owner only</span>
         <h2>Vào phòng cỏ riêng</h2>
@@ -1565,7 +1570,7 @@ function OwnerWorkspace({
                   <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
                     <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Tên bài hát..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
                     <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="Đường dẫn file (/audio/...)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="Đường dẫn file (/audio/ten-file.mp3)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
                     <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu</button>
                     <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain, marginLeft: "8px" }}>Hủy</button>
                   </form>
@@ -1613,7 +1618,7 @@ function OwnerWorkspace({
                         <strong style={{ color: theme.textMain, fontSize: "13px" }}>{character.name}</strong>
                       </div>
                       <div style={{ display: "flex", gap: "6px" }}>
-                        <button className="secondary-button" onClick={() => startEdit(character)} style={{ padding: "4px 10px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
+                        <button className="secondary-button" onClick={() => startEdit(character)} style={{ padding: "4px 10px", fontSize: "11px" }}>Sửa</button>
                         <button className="icon-button danger" onClick={() => setConfirmDelete(character)} style={{ width: "28px", height: "28px" }}>×</button>
                       </div>
                     </div>
@@ -1782,7 +1787,7 @@ export default function Home() {
     };
     const nextList = [newFb, ...feedbacks];
     setFeedbacks(nextList);
-    localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
+    localStorage.setItem("lalapine-custom-custom-feedbacks", JSON.stringify(nextList));
     void postFeedbackToGitHub(charId, charName, authorName, content);
   };
 
