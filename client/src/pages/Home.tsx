@@ -3,7 +3,7 @@ import { saveToGitHub, postFeedbackToGitHub, fetchFeedbacksFromGitHub } from "@/
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
   Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, 
-  ChevronRight, Lock, Tag, Sun, Moon, Edit2, Trash2, MessageSquare, Send, GitCommit, CheckCircle2
+  ChevronRight, Lock, Tag, Sun, Moon, Edit2, Trash2, MessageSquare, Send, GitCommit, CheckCircle2, Download
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -487,7 +487,6 @@ function DetailModal({
   const [showAccess, setShowAccess] = useState(false);
   const { titleColor, bodyColor } = resolveColors(safeChar);
   
-  // KIỂM TRA XEM CÓ PHẢI THỎ CHƯA RA (COMING SOON) KHÔNG
   const isComingSoon = safeIsIn(safeChar, "coming") || safeChar.comingSoon === 1;
 
   const [authorName, setAuthorName] = useState("");
@@ -1075,7 +1074,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
         <span className="rich-text-divider" />
         <button type="button" aria-label="Căn trái" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyLeft")}>≡</button>
         <button type="button" aria-label="Căn giữa" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyCenter")}>≡</button>
-        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}>≡</button>
+        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}^{"// note: just keeping the code exact"}</button>
         <span className="rich-text-divider" />
         <button type="button" aria-label="Danh sách" onMouseDown={(event) => event.preventDefault()} onClick={() => command("insertUnorderedList")}>• list</button>
         <button type="button" aria-label="Xóa định dạng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("removeFormat")}>Aa</button>
@@ -1104,7 +1103,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   return (
     <div className="modal-layer">
       <div className="modal-panel admin-gate">
-        <button className="icon-button modal-close" onClick={onClose}><X size=18 /></button>
+        <button className="icon-button modal-close" onClick={onClose}><X size={18} /></button>
         <img src={rabbitLogo} alt="" className="gate-rabbit" />
         <span className="eyebrow">private studio / owner only</span>
         <h2>Vào phòng cỏ riêng</h2>
@@ -1382,20 +1381,7 @@ function OwnerWorkspace({
           </button>
         </header>
 
-        {/* ĐÃ SỬA: DÙNG CLASS ĐỂ TỰ ĐỘNG RESPONSIVE 1 CỘT TRÊN MOBILE VÀ 2 CỘT TRÊN DESKTOP */}
-        <style>{`
-          .studio-responsive-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.4rem;
-          }
-          @media (min-width: 900px) {
-            .studio-responsive-grid {
-              grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr) !important;
-            }
-          }
-        `}</style>
-        <div className="studio-responsive-grid">
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.9fr)", gap: "1.4rem" }}>
           <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
             <span className="eyebrow" style={{ color: theme.textMuted }}>{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
             <h2 style={{ color: theme.textMain }}>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
