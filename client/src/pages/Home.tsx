@@ -1,5 +1,4 @@
 import { trpc } from "@/lib/trpc";
-import { saveToGitHub, postFeedbackToGitHub, fetchFeedbacksFromGitHub } from "@/lib/github";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
   Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, 
@@ -12,6 +11,11 @@ import websiteData from "@/data/website_data.json";
 
 // MẬT KHẨU STUDIO DUY NHẤT
 const MASTER_PASSWORD = "jk0807";
+
+// CẤU HÌNH GITHUB CỦA BẠN ĐỂ ĐẨY CODE TRỰC TIẾP
+const GITHUB_OWNER = "la-lapine";
+const GITHUB_REPO = "la-l4pine";
+const GITHUB_FILE_PATH = "client/src/data/website_data.json";
 
 type Track = {
   id: number;
@@ -178,13 +182,6 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       }}
     >
       <style>{`
-        .intro-layer, .intro-ripple, .intro-center, .intro-foot,
-        .screen-center-ripple, .fullscreen-ripple-ring, .wide-wave-ring, .delicate-wave-ring, .concentric-ripple {
-          display: none !important;
-          opacity: 0 !important;
-          animation: none !important;
-          visibility: hidden !important;
-        }
         @keyframes center-stage-motion {
           0%, 55% { transform: translateY(40px); }
           100% { transform: translateY(0); }
@@ -767,14 +764,7 @@ function PublicPage({
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   
-  // ĐỌC LUÔN DATA TỪ GITHUB (BỎ QUA LOCALSTORAGE ĐỂ LUÔN CÓ DỮ LIỆU MỚI NHẤT)
-  const safeCharacters = useMemo(() => {
-    if (websiteData && Array.isArray(websiteData.characters) && websiteData.characters.length > 0) {
-      return websiteData.characters.map(sanitizeCharacter);
-    }
-    return fallbackCharacters.map(sanitizeCharacter);
-  }, []);
-
+  const safeCharacters = useMemo(() => characters.map(sanitizeCharacter), [characters]);
   const unreadCount = notifications.filter((item) => item && !readNotificationIds.includes(item.id)).length;
   const latest = useMemo(() => [...safeCharacters].filter((c) => safeIsIn(c, "new")).sort((a, b) => b.id - a.id)[0] || safeCharacters[0], [safeCharacters]);
   const [selected, setSelected] = useState<Character | null>(null);
@@ -1140,7 +1130,7 @@ function OwnerWorkspace({
   notifications: NotificationItem[];
   onSaveNotifications: (newNotifs: NotificationItem[]) => void;
   feedbacks: CharacterFeedback[];
-  onCommitToGitHub: () => Promise<void>;
+  onCommitToGitHub: (token: string) => Promise<boolean>;
 }) {
   const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem("lalapine-studio-theme") !== "light");
   const toggleTheme = () => { const next = !isDark; setIsDark(next); localStorage.setItem("lalapine-studio-theme", next ? "dark" : "light"); };
@@ -1324,6 +1314,31 @@ function OwnerWorkspace({
     setConfirmDelete(null);
   };
 
+  const handlePushToGitHubDirectly = async () => {
+    let currentToken = localStorage.getItem("lalapine_github_token");
+    if (!currentToken) {
+      currentToken = window.prompt("Lần đầu tiên đẩy code, vui lòng dán mã Personal Access Token (ghp_...) của bạn vào đây:");
+      if (!currentToken) {
+        toast.error("Đã hủy quá trình lưu.");
+        return;
+      }
+      localStorage.setItem("lalapine_github_token", currentToken);
+    }
+
+    setIsPushing(true);
+    const success = await onCommitToGitHub(currentToken);
+    if (success) {
+      toast.success("Tuyệt vời! Đã bắn dữ liệu lên GitHub thành công. Vercel đang tự động xây lại web.", {
+        icon: <CheckCircle2 size={16} style={{ color: "#4ade80" }} />,
+        duration: 5000,
+      });
+    } else {
+      toast.error("Lỗi xác thực Token. Vui lòng kiểm tra lại mã Token của bạn.");
+      localStorage.removeItem("lalapine_github_token"); // Xóa token sai để lần sau hỏi lại
+    }
+    setIsPushing(false);
+  };
+
   const handleDownloadData = () => {
     const dataToExport = { characters: characters.map(sanitizeCharacter), notifications, tracks };
     const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: "application/json" });
@@ -1361,6 +1376,16 @@ function OwnerWorkspace({
           >
             <Download size={15} />
             <span>Tải file dữ liệu (.json)</span>
+          </button>
+
+          <button 
+            type="button" 
+            onClick={handlePushToGitHubDirectly}
+            disabled={isPushing}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid #3a86ff", background: "#3a86ff", color: "#ffffff", fontSize: "12px", fontWeight: 600, cursor: isPushing ? "not-allowed" : "pointer" }}
+          >
+            <GitCommit size={15} />
+            <span>{isPushing ? "Đang đẩy lên..." : "Lưu tự động lên GitHub"}</span>
           </button>
 
           <button 
@@ -1460,30 +1485,13 @@ function OwnerWorkspace({
 
                 {systemAvailableTags.length > 0 && (
                   <div style={{ marginTop: "0.6rem", borderTop: `1px dashed ${theme.inputBorder}`, paddingTop: "0.5rem" }}>
-                    <small style={{ color: theme.textMuted, display: "block", marginBottom: "0.4rem", fontSize: "11px" }}>
-                      Gợi ý tag đã có (Bấm để chọn nhanh):
-                    </small>
+                    <small style={{ color: theme.textMuted, display: "block", marginBottom: "0.4rem", fontSize: "11px" }}>Gợi ý tag đã có (Bấm để chọn nhanh):</small>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem" }}>
                       {systemAvailableTags.map((tagItem) => {
                         const currentArr = form.tags.split(",").map(t => t.trim().toLowerCase());
                         const isSelected = currentArr.includes(tagItem.toLowerCase());
                         return (
-                          <button
-                            key={tagItem}
-                            type="button"
-                            onClick={() => toggleTagSelection(tagItem)}
-                            style={{
-                              padding: "4px 10px",
-                              borderRadius: "6px",
-                              border: "1px solid",
-                              borderColor: isSelected ? "#a8d5ff" : theme.inputBorder,
-                              background: isSelected ? "rgba(168,213,255,.25)" : (isDark ? "rgba(255,255,255,.05)" : "#ffffff"),
-                              color: isSelected ? (isDark ? "#ffffff" : "#0c2c59") : theme.textMuted,
-                              fontSize: "11px",
-                              cursor: "pointer",
-                              transition: "all 0.15s"
-                            }}
-                          >
+                          <button key={tagItem} type="button" onClick={() => toggleTagSelection(tagItem)} style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid", borderColor: isSelected ? "#a8d5ff" : theme.inputBorder, background: isSelected ? "rgba(168,213,255,.25)" : (isDark ? "rgba(255,255,255,.05)" : "#ffffff"), color: isSelected ? (isDark ? "#ffffff" : "#0c2c59") : theme.textMuted, fontSize: "11px", cursor: "pointer", transition: "all 0.15s" }}>
                             {isSelected ? `✓ ${tagItem}` : `+ ${tagItem}`}
                           </button>
                         );
@@ -1597,18 +1605,31 @@ function OwnerWorkspace({
                   <button type="button" onClick={handleResetDefaultTracks} className="secondary-button" style={{ fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMuted }}>Khôi phục gốc</button>
                 </div>
                 
-                <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
-                  <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                  <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                  <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn file (/audio/ten-file.mp3)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                  <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
-                </form>
+                {editingTrack ? (
+                  <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
+                    <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Tên bài hát..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="Đường dẫn file (/audio/...)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu</button>
+                    <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain, marginLeft: "8px" }}>Hủy</button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
+                    <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn (/audio/file.mp3)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
+                  </form>
+                )}
 
                 <div style={{ display: "grid", gap: "0.5rem", maxHeight: "320px", overflowY: "auto" }}>
                   {tracks.map((track, index) => (
                     <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
                       <span style={{ color: theme.textMain, fontSize: "12.5px" }}>0{index + 1}. {track.title}</span>
-                      <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); setEditUrl(track.audioUrl); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
+                        <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1741,13 +1762,25 @@ export default function Home() {
     localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
   };
 
-  const handleDownloadData = () => {
-    const dataToExport = { characters: characters.map(sanitizeCharacter), notifications, tracks };
-    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "website_data.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    toast.success("Đã tải file dữ liệu về máy tính!");
+  const handleCommitToGitHubDirectly = async (token: string): Promise<boolean> => {
+    const payload = { characters: characters.map(sanitizeCharacter), notifications, tracks };
+    const jsonString = JSON.stringify(payload, null, 2);
+    const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
+    const getUrl = `https://api.github.com/repos/la-lapine/la-l4pine/contents/client/src/data/website_data.json`;
+    try {
+      const getRes = await fetch(getUrl, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" } });
+      let sha = "";
+      if (getRes.ok) {
+        const fileData = await getRes.json();
+        sha = fileData.sha;
+      }
+      const putRes = await fetch(getUrl, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/vnd.github.v3+json" },
+        body: JSON.stringify({ message: "🐰 Lưu trực tiếp từ Studio", content: base64Content, sha: sha || undefined })
+      });
+      return putRes.ok;
+    } catch { return false; }
   };
 
   useEffect(() => { 
@@ -1769,7 +1802,7 @@ export default function Home() {
           characters={characters} onClose={() => setStudio(false)} onSaveCharacters={handleSaveCharacters} 
           tracks={tracks} onSaveTracks={handleSaveTracks}
           notifications={notifications} onSaveNotifications={handleSaveNotifications}
-          feedbacks={feedbacks} onCommitToGitHub={async () => handleDownloadData()}
+          feedbacks={feedbacks} onCommitToGitHub={handleCommitToGitHubDirectly}
         />
       ) : (
         <PublicPage 
