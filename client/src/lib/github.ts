@@ -1,4 +1,4 @@
-// Bộ xử lý đẩy dữ liệu và nạp Feedback qua GitHub API (Đã sửa đúng tên repo la-l4pine)
+// Bộ xử lý đẩy dữ liệu và nạp Feedback qua GitHub API
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN || "";
 const GITHUB_OWNER = "la-lapine"; // Tên tài khoản GitHub của bạn
 const GITHUB_REPO = "la-l4pine";  // Tên Repository chính xác của bạn
@@ -97,3 +97,15 @@ export async function fetchFeedbacksFromGitHub(): Promise<any[]> {
       const issues = await res.json();
       const feedbacks: any[] = [];
       for (const issue of issues) {
+        try {
+          const parsed = JSON.parse(issue.body);
+          if (parsed && parsed.characterId) feedbacks.push(parsed);
+        } catch {}
+      }
+      return feedbacks;
+    }
+  } catch (err) {
+    console.error("Lỗi lấy feedback từ GitHub:", err);
+  }
+  return [];
+}
