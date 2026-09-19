@@ -1074,7 +1074,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
         <span className="rich-text-divider" />
         <button type="button" aria-label="Căn trái" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyLeft")}>≡</button>
         <button type="button" aria-label="Căn giữa" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyCenter")}>≡</button>
-        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}^{"// note: just keeping the code exact"}</button>
+        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}</button>
         <span className="rich-text-divider" />
         <button type="button" aria-label="Danh sách" onMouseDown={(event) => event.preventDefault()} onClick={() => command("insertUnorderedList")}>• list</button>
         <button type="button" aria-label="Xóa định dạng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("removeFormat")}>Aa</button>
