@@ -1,20 +1,18 @@
-// Bộ xử lý đẩy dữ liệu và nạp Feedback qua GitHub API (Không cần Database)
+// Bộ xử lý đẩy dữ liệu và nạp Feedback qua GitHub API (Đã sửa đúng tên repo la-l4pine)
 const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN || "";
-const GITHUB_OWNER = import.meta.env.VITE_GITHUB_OWNER || "";
-const GITHUB_REPO = import.meta.env.VITE_GITHUB_REPO || "";
+const GITHUB_OWNER = "la-lapine"; // Tên tài khoản GitHub của bạn
+const GITHUB_REPO = "la-l4pine";  // Tên Repository chính xác của bạn
 
-// Sửa dòng này:
-const FILE_PATH = "client/src/data/website_data.json"; // hoặc "src/data/website_data.json" tùy theo repo của bạn
+const FILE_PATH = "client/src/data/website_data.json";
 
 // 1. Hàm lưu dữ liệu từ Studio thẳng lên GitHub
 export async function saveToGitHub(content: any): Promise<boolean> {
   if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
-    console.error("Thiếu biến môi trường GitHub trên Vercel!");
+    console.error("Thiếu biến môi trường VITE_GITHUB_TOKEN trên Vercel!");
     return false;
   }
 
   try {
-    // Lấy SHA của file cũ
     const getUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`;
     const getRes = await fetch(getUrl, {
       headers: {
@@ -29,9 +27,7 @@ export async function saveToGitHub(content: any): Promise<boolean> {
       sha = fileData.sha;
     }
 
-    // Ghi đè file mới (Push commit)
     const jsonString = JSON.stringify(content, null, 2);
-    // Mã hóa UTF-8 sang Base64
     const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
 
     const putRes = await fetch(getUrl, {
@@ -101,15 +97,3 @@ export async function fetchFeedbacksFromGitHub(): Promise<any[]> {
       const issues = await res.json();
       const feedbacks: any[] = [];
       for (const issue of issues) {
-        try {
-          const parsed = JSON.parse(issue.body);
-          if (parsed && parsed.characterId) feedbacks.push(parsed);
-        } catch {}
-      }
-      return feedbacks;
-    }
-  } catch (err) {
-    console.error("Lỗi lấy feedback từ GitHub:", err);
-  }
-  return [];
-}
