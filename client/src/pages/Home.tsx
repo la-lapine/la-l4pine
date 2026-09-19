@@ -167,7 +167,6 @@ function Header({ onStudio, onNotifications, notificationCount }: { onStudio: ()
   return <header className="site-header"><Logo /><nav className="site-nav" aria-label="Điều hướng chính"><Link className={location === "/discover" || location === "/" ? "active" : ""} href="/discover#archive">Khám phá</Link><a href="/discover#new" onClick={(event) => { event.preventDefault(); jumpTo("new"); }}>Thỏ mới ra</a><a href="/discover#featured" onClick={(event) => { event.preventDefault(); jumpTo("featured"); }}>Thỏ có sẵn</a><Link className={location === "/meadow" ? "active" : ""} href="/meadow#coming">Thỏ chưa ra</Link><button className="nav-notification" onClick={onNotifications}><span className="notification-bell-wrap"><Bell size={13} />{notificationCount > 0 && <b className="notification-badge">{notificationCount > 99 ? "99+" : notificationCount}</b>}</span> Thông báo</button></nav><div className="header-actions"><span className="live-status"><i /> đồng cỏ đang mở</span><button className="studio-trigger" onClick={onStudio} aria-label="Mở studio"><Menu size={18} /></button></div></header>;
 }
 
-// MÀN HÌNH BẮT ĐẦU VỚI HIỆU ỨNG POP-UP PHÓNG TO THU NHỎ NGUYÊN BẢN
 function StartScreen({ onStart }: { onStart: () => void }) {
   return (
     <div 
@@ -530,7 +529,6 @@ function DetailModal({
               {tagsOf(safeChar).map((tag) => <span className="tag-chip" key={tag}>#{tag}</span>)}
             </div>
             
-            {/* ĐÃ SỬA: NẾU LÀ THỎ CHƯA RA THÌ KHÓA NÚT MỞ LIÊN KẾT, CÒN LẠI HOẠT ĐỘNG BÌNH THƯỜNG */}
             <div className="detail-actions">
               <button 
                 className="primary-button" 
@@ -626,7 +624,6 @@ function DetailModal({
 function AccessModal({ character, onClose, onSuccess }: { character: Character; onClose: () => void; onSuccess: (url: string) => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const verify = trpc.characters.verifyAccess.useMutation();
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -648,14 +645,6 @@ function AccessModal({ character, onClose, onSuccess }: { character: Character; 
       if (character?.externalUrl) onSuccess(character.externalUrl);
       return;
     }
-
-    try {
-      const result = await verify.mutateAsync({ id: character.id, password });
-      if (result.ok && result.url) {
-        onSuccess(result.url);
-        return;
-      }
-    } catch {}
 
     setError("Mật khẩu chưa đúng, thử lại nhé.");
   };
@@ -794,16 +783,12 @@ function PublicPage({
   const newer = visible.filter((c) => safeIsIn(c, "new"));
   const miracles = visible.filter((c) => safeIsIn(c, "featured")).sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || "")));
   const coming = visible.filter((c) => safeIsIn(c, "coming"));
-  const favoriteMutation = trpc.characters.favorite.useMutation();
   
   const toggleFavorite = (character: Character) => { 
     if (!character) return;
     const next = favorites.includes(character.id) ? favorites.filter((id) => id !== character.id) : [...favorites, character.id]; 
     setFavorites(next); 
     localStorage.setItem("lalapine-favorites", JSON.stringify(next)); 
-    try {
-      favoriteMutation.mutate({ characterId: character.id, visitorId: visitorId() }); 
-    } catch {}
   };
   
   useEffect(() => { 
@@ -1074,7 +1059,7 @@ function RichTextField({ label, value, onChange }: { label: string; value: strin
         <span className="rich-text-divider" />
         <button type="button" aria-label="Căn trái" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyLeft")}>≡</button>
         <button type="button" aria-label="Căn giữa" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyCenter")}>≡</button>
-        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}>=</button>
+        <button type="button" aria-label="Căn phải" onMouseDown={(event) => event.preventDefault()} onClick={() => command("justifyRight")}>≡</button>
         <span className="rich-text-divider" />
         <button type="button" aria-label="Danh sách" onMouseDown={(event) => event.preventDefault()} onClick={() => command("insertUnorderedList")}>• list</button>
         <button type="button" aria-label="Xóa định dạng" onMouseDown={(event) => event.preventDefault()} onClick={() => command("removeFormat")}>Aa</button>
@@ -1103,7 +1088,7 @@ function AdminGate({ onUnlock, onClose }: { onUnlock: () => void; onClose: () =>
   return (
     <div className="modal-layer">
       <div className="modal-panel admin-gate">
-        <button className="icon-button modal-close" onClick={onClose}><X size={18} /></button>
+        <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
         <img src={rabbitLogo} alt="" className="gate-rabbit" />
         <span className="eyebrow">private studio / owner only</span>
         <h2>Vào phòng cỏ riêng</h2>
@@ -1160,7 +1145,6 @@ function OwnerWorkspace({
   const [confirmDelete, setConfirmDelete] = useState<Character | null>(null);
   const [studioTab, setStudioTab] = useState("characters");
   const [isPushing, setIsPushing] = useState(false);
-  const uploadAsset = trpc.owner.uploadAsset.useMutation();
 
   const safeChars = useMemo(() => characters.map(sanitizeCharacter), [characters]);
   const systemAvailableTags = useMemo(() => {
@@ -1328,6 +1312,15 @@ function OwnerWorkspace({
     await onCommitToGitHub();
     setIsPushing(false);
   };
+
+  const handleDownloadData = () => {
+    const dataToExport = { characters: characters.map(sanitizeCharacter), notifications, tracks };
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "website_data.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    toast.success("Đã tải file dữ liệu về máy tính!");
+  };
   
   return (
     <div className="workspace-layer" style={{ background: theme.bg, color: theme.textMain, transition: "background 0.3s ease" }}>
@@ -1349,6 +1342,16 @@ function OwnerWorkspace({
         </nav>
 
         <div style={{ marginTop: "auto", padding: "1rem 0.4rem", display: "flex", flexDirection: "column", gap: "8px" }}>
+          
+          <button 
+            type="button" 
+            onClick={handleDownloadData}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid #10b981", background: "#10b981", color: "#ffffff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}
+          >
+            <Download size={15} />
+            <span>Tải file dữ liệu (.json)</span>
+          </button>
+
           <button 
             type="button" 
             onClick={handlePushToGitHub}
@@ -1356,7 +1359,7 @@ function OwnerWorkspace({
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid #3a86ff", background: "#3a86ff", color: "#ffffff", fontSize: "12px", fontWeight: 600, cursor: isPushing ? "not-allowed" : "pointer" }}
           >
             <GitCommit size={15} />
-            <span>{isPushing ? "Đang đẩy lên GitHub..." : "Lưu vĩnh viễn lên GitHub"}</span>
+            <span>{isPushing ? "Đang đẩy lên..." : "Lưu tự động lên GitHub"}</span>
           </button>
 
           <button 
@@ -1381,7 +1384,11 @@ function OwnerWorkspace({
           </button>
         </header>
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.9fr)", gap: "1.4rem" }}>
+        <style>{`
+          .studio-responsive-grid { display: grid; grid-template-columns: 1fr; gap: 1.4rem; }
+          @media (min-width: 900px) { .studio-responsive-grid { grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr) !important; } }
+        `}</style>
+        <div className="studio-responsive-grid">
           <section className={`editor-card studio-pane ${studioTab === "characters" ? "is-active" : "is-hidden"}`} style={{ background: theme.cardBg, borderColor: theme.cardBorder }}>
             <span className="eyebrow" style={{ color: theme.textMuted }}>{editing ? "edit rabbit / đang chỉnh sửa" : "new rabbit"}</span>
             <h2 style={{ color: theme.textMain }}>{editing ? `Chỉnh sửa ${editing.name}` : "Gieo một hồ sơ mới"}</h2>
@@ -1566,31 +1573,18 @@ function OwnerWorkspace({
                   <button type="button" onClick={handleResetDefaultTracks} className="secondary-button" style={{ fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMuted }}>Khôi phục gốc</button>
                 </div>
                 
-                {editingTrack ? (
-                  <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
-                    <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Tên bài hát..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="Đường dẫn file (/audio/ten-file.mp3)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu</button>
-                    <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain, marginLeft: "8px" }}>Hủy</button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
-                    <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn (/audio/file.mp3)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                    <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
-                  </form>
-                )}
+                <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
+                  <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                  <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                  <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn file (/audio/ten-file.mp3)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                  <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
+                </form>
 
                 <div style={{ display: "grid", gap: "0.5rem", maxHeight: "320px", overflowY: "auto" }}>
                   {tracks.map((track, index) => (
                     <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
                       <span style={{ color: theme.textMain, fontSize: "12.5px" }}>0{index + 1}. {track.title}</span>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); setEditUrl(track.audioUrl); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
-                        <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
-                      </div>
+                      <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
                     </div>
                   ))}
                 </div>
@@ -1787,7 +1781,7 @@ export default function Home() {
     };
     const nextList = [newFb, ...feedbacks];
     setFeedbacks(nextList);
-    localStorage.setItem("lalapine-custom-custom-feedbacks", JSON.stringify(nextList));
+    localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
     void postFeedbackToGitHub(charId, charName, authorName, content);
   };
 
