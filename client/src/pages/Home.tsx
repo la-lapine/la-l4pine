@@ -1,5 +1,4 @@
 import { trpc } from "@/lib/trpc";
-import { saveToGitHub, postFeedbackToGitHub, fetchFeedbacksFromGitHub } from "@/lib/github";
 import { 
   ArrowUpRight, Bell, ChevronDown, Heart, Menu, Pause, 
   Play, Repeat, Search, SkipBack, SkipForward, Volume2, VolumeX, X, 
@@ -12,6 +11,11 @@ import websiteData from "@/data/website_data.json";
 
 // MẬT KHẨU STUDIO DUY NHẤT
 const MASTER_PASSWORD = "jk0807";
+
+// CẤU HÌNH GITHUB CỦA BẠN ĐỂ ĐẨY CODE TRỰC TIẾP
+const GITHUB_OWNER = "la-lapine";
+const GITHUB_REPO = "la-l4pine";
+const GITHUB_FILE_PATH = "client/src/data/website_data.json";
 
 type Track = {
   id: number;
@@ -221,40 +225,11 @@ function StartScreen({ onStart }: { onStart: () => void }) {
 
 const defaultTracks: Track[] = [
   { id: 1, title: "southbound", artist: "Artemas", audioUrl: "/audio/Artemas - southbound (official visualizer) - Artemas.mp3" },
-  { id: 2, title: "Gimme More", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3" },
-  { id: 3, title: "Toxic", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Toxic (Official HD Video) - BritneySpearsVEVO.mp3" },
-  { id: 4, title: "Everything is romantic", artist: "Charli xcx", audioUrl: "/audio/Charli xcx - Everything is romantic (official lyric video) - Charli xcx.mp3" },
-  { id: 5, title: "LET THE WORLD BURN", artist: "Chris Grey", audioUrl: "/audio/Chris Grey - LET THE WORLD BURN (Official Lyric Video) - Chris Grey.mp3" },
-  { id: 6, title: "Dark Paradise", artist: "Lana Del Rey", audioUrl: "/audio/Dark Paradise - Lana Del Rey.mp3" },
-  { id: 7, title: "Training Season (Live)", artist: "Dua Lipa", audioUrl: "/audio/Dua Lipa - Training Season (Live from the Royal Albert Hall) [Official Performance Video] - Dua Lipa.mp3" },
-  { id: 8, title: "UNETHICAL", artist: "Faouzia", audioUrl: "/audio/Faouzia - UNETHICAL (Official Music Video) - Faouzia.mp3" },
-  { id: 9, title: "On The Floor", artist: "Jennifer Lopez, Pitbull", audioUrl: "/audio/Jennifer Lopez, Pitbull - On The Floor (Official Music Video) - JenniferLopezVEVO.mp3" },
-  { id: 10, title: "Born To Die", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Born To Die - LanaDelReyVEVO.mp3" },
-  { id: 11, title: "Brooklyn Baby", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Brooklyn Baby (Official Audio) - LanaDelReyVEVO.mp3" },
-  { id: 12, title: "Doin' Time", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Doin' Time - LanaDelReyVEVO.mp3" },
-  { id: 13, title: "Ultraviolence", artist: "Lana Del Rey", audioUrl: "/audio/Lana Del Rey - Ultraviolence (Audio) - LanaDelReyVEVO.mp3" },
-  { id: 14, title: "Legendary Lovers", artist: "Katy Perry", audioUrl: "/audio/Legendary Lovers - Katy Perry.mp3" },
-  { id: 15, title: "When Did You Get Hot", artist: "Sabrina Carpenter", audioUrl: "/audio/Sabrina Carpenter - When Did You Get Hot (Official Lyric Video) - SabrinaCarpenterVEVO.mp3" },
-  { id: 16, title: "Sad Girl", artist: "Lana Del Rey", audioUrl: "/audio/Sad Girl - Lana Del Rey.mp3" },
-  { id: 17, title: "Salvatore", artist: "Lana Del Rey", audioUrl: "/audio/Salvatore - Lana Del Rey.mp3" },
-  { id: 18, title: "Can't Remember to Forget You", artist: "Shakira ft. Rihanna", audioUrl: "/audio/Shakira - Can't Remember to Forget You (Official Video) ft. Rihanna - shakiraVEVO.mp3" },
-  { id: 19, title: "back to friends", artist: "sombr", audioUrl: "/audio/sombr - back to friends (official video) - sombr.mp3" },
-  { id: 20, title: "undressed", artist: "sombr", audioUrl: "/audio/sombr - undressed (official lyric video) - sombr.mp3" },
-  { id: 21, title: "we never dated", artist: "sombr", audioUrl: "/audio/sombr - we never dated (official lyric video) - sombr.mp3" },
-  { id: 22, title: "Moth To A Flame", artist: "Swedish House Mafia, The Weeknd", audioUrl: "/audio/Swedish House Mafia and The Weeknd - Moth To A Flame (Official Lyric Video) - SHMVEVO.mp3" },
-  { id: 23, title: "A Little Death", artist: "The Neighbourhood", audioUrl: "/audio/The Neighbourhood - A Little Death (Official Audio) - TheNeighbourhoodVEVO.mp3" },
-  { id: 24, title: "Afraid", artist: "The Neighbourhood", audioUrl: "/audio/The Neighbourhood - Afraid (Official Audio) - TheNeighbourhoodVEVO.mp3" },
-  { id: 25, title: "Sweater Weather", artist: "The Neighbourhood", audioUrl: "/audio/The Neighbourhood - Sweater Weather (Official Video) - TheNeighbourhoodVEVO.mp3" },
-  { id: 26, title: "After Hours", artist: "The Weeknd", audioUrl: "/audio/The Weeknd - After Hours (Audio) - The Weeknd.mp3" },
-  { id: 27, title: "Call Out My Name", artist: "The Weeknd", audioUrl: "/audio/The Weeknd - Call Out My Name (Official Audio) - The Weeknd.mp3" },
-  { id: 28, title: "House Of Balloons / Glass Table Girls", artist: "The Weeknd", audioUrl: "/audio/The Weeknd - House Of Balloons _ Glass Table Girls - The Weeknd.mp3" },
-  { id: 29, title: "One Of The Girls", artist: "The Weeknd, JENNIE, Lily-Rose Depp", audioUrl: "/audio/The Weeknd, JENNIE, Lily-Rose Depp - One Of The Girls (Official Video) - TheWeekndVEVO.mp3" },
-  { id: 30, title: "The Abyss", artist: "The Weeknd, Lana Del Rey", audioUrl: "/audio/The Weeknd, Lana Del Rey - The Abyss (Audio) - TheWeekndVEVO.mp3" }
+  { id: 2, title: "Gimme More", artist: "Britney Spears", audioUrl: "/audio/Britney Spears - Gimme More (Official HD Video) - BritneySpearsVEVO.mp3" }
 ];
 
 const fallbackCharacters: Character[] = [
-  { id: 201, slug: "mup-sua", name: "Thỏ Múp Sữa", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=86", caption: "Một chiếc bánh sữa mềm đi lạc vào đồng cỏ xanh.", tagsJson: JSON.stringify(["mới ra lò", "mềm", "ấm áp"]), externalUrl: "https://character.ai/", description: "Múp Sữa thích những buổi chiều có nắng nhạt và một chiếc khăn len vừa đủ ấm.", backstory: "Bạn ấy được tìm thấy trong một hộp sữa rỗng, bên cạnh một bông cỏ bốn lá.", firstMessage: "Bạn có muốn chia đôi chiếc bánh này không?", section: "new", favoriteCount: 128 },
-  { id: 202, slug: "ky-tich-a", name: "Thỏ Kỳ Tích Aster", imageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=900&q=86", caption: "Người giữ những điều nhỏ bé nhưng không thể giải thích.", tagsJson: JSON.stringify(["kỳ tích", "a-z", "phiêu lưu"]), externalUrl: "https://character.ai/", description: "Aster luôn xuất hiện trước một khoảnh khắc kỳ diệu, như thể bạn ấy đã biết từ lâu.", backstory: "Trong cuốn sổ của Aster có tên của mọi người từng tin vào điều không thể.", firstMessage: "Mình nghĩ hôm nay có thể xảy ra một điều rất đẹp.", section: "featured", featured: 1, favoriteCount: 246 },
+  { id: 201, slug: "mup-sua", name: "Thỏ Múp Sữa", imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=900&q=86", caption: "Một chiếc bánh sữa mềm đi lạc vào đồng cỏ xanh.", tagsJson: JSON.stringify(["mới ra lò", "mềm", "ấm áp"]), externalUrl: "https://character.ai/", description: "Múp Sữa thích những buổi chiều có nắng nhạt và một chiếc khăn len vừa đủ ấm.", backstory: "Bạn ấy được tìm thấy trong một hộp sữa rỗng, bên cạnh một bông cỏ bốn lá.", firstMessage: "Bạn có muốn chia đôi chiếc bánh này không?", section: "new", favoriteCount: 128 }
 ];
 
 function MusicPlayer({ tracks }: { tracks: Track[] }) {
@@ -514,6 +489,38 @@ function DetailModal({
   
   return (
     <div className="modal-layer">
+      <style>{`
+        .rich-content-rendered {
+          white-space: pre-wrap !important;
+          word-break: break-word !important;
+          line-height: 1.85 !important;
+        }
+        .rich-content-rendered i, .rich-content-rendered em {
+          font-style: italic !important;
+          font-family: inherit !important;
+        }
+        .rich-content-rendered b, .rich-content-rendered strong {
+          font-weight: 700 !important;
+          font-family: inherit !important;
+        }
+        .rich-content-rendered u {
+          text-decoration: underline !important;
+        }
+        .rich-content-rendered p {
+          margin: 0 0 0.75rem 0 !important;
+        }
+        .rich-content-rendered ul {
+          list-style-type: disc !important;
+          padding-left: 1.3rem !important;
+          margin: 0.4rem 0 0.8rem 0 !important;
+        }
+        .rich-content-rendered ol {
+          list-style-type: decimal !important;
+          padding-left: 1.3rem !important;
+          margin: 0.4rem 0 0.8rem 0 !important;
+        }
+      `}</style>
+
       <div className="modal-panel detail-modal" style={{ maxHeight: "90vh", overflowY: "auto" }}>
         <button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button>
         <div className="detail-layout">
@@ -762,7 +769,7 @@ function PublicPage({
   const latest = useMemo(() => [...safeCharacters].filter((c) => safeIsIn(c, "new")).sort((a, b) => b.id - a.id)[0] || safeCharacters[0], [safeCharacters]);
   const [selected, setSelected] = useState<Character | null>(null);
   const [showSlot, setShowSlot] = useState(false);
-  const [favorites, setFavorites] = useState<number[]>(() => JSON.parse(localStorage.getItem("lalapine-favorites") || "[]"));
+  const [favorites, setFavorites] = useState<number[]>(() => { try { return JSON.parse(localStorage.getItem("lalapine-favorites") || "[]"); } catch { return []; } });
   const [loves, setLoves] = useState<LoveSpark[]>([]);
 
   const allTags = useMemo(() => {
@@ -1123,7 +1130,7 @@ function OwnerWorkspace({
   notifications: NotificationItem[];
   onSaveNotifications: (newNotifs: NotificationItem[]) => void;
   feedbacks: CharacterFeedback[];
-  onCommitToGitHub: () => Promise<void>;
+  onCommitToGitHub: (token: string) => Promise<boolean>;
 }) {
   const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem("lalapine-studio-theme") !== "light");
   const toggleTheme = () => { const next = !isDark; setIsDark(next); localStorage.setItem("lalapine-studio-theme", next ? "dark" : "light"); };
@@ -1307,9 +1314,28 @@ function OwnerWorkspace({
     setConfirmDelete(null);
   };
 
-  const handlePushToGitHub = async () => {
+  const handlePushToGitHubDirectly = async () => {
+    let currentToken = localStorage.getItem("lalapine_github_token");
+    if (!currentToken) {
+      currentToken = window.prompt("Lần đầu tiên đẩy code, vui lòng dán mã Personal Access Token (ghp_...) của bạn vào đây:");
+      if (!currentToken) {
+        toast.error("Đã hủy quá trình lưu.");
+        return;
+      }
+      localStorage.setItem("lalapine_github_token", currentToken);
+    }
+
     setIsPushing(true);
-    await onCommitToGitHub();
+    const success = await onCommitToGitHub(currentToken);
+    if (success) {
+      toast.success("Tuyệt vời! Đã bắn dữ liệu lên GitHub thành công. Vercel đang tự động xây lại web.", {
+        icon: <CheckCircle2 size={16} style={{ color: "#4ade80" }} />,
+        duration: 5000,
+      });
+    } else {
+      toast.error("Lỗi xác thực Token. Vui lòng kiểm tra lại mã Token của bạn.");
+      localStorage.removeItem("lalapine_github_token"); // Xóa token sai để lần sau hỏi lại
+    }
     setIsPushing(false);
   };
 
@@ -1354,7 +1380,7 @@ function OwnerWorkspace({
 
           <button 
             type="button" 
-            onClick={handlePushToGitHub}
+            onClick={handlePushToGitHubDirectly}
             disabled={isPushing}
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid #3a86ff", background: "#3a86ff", color: "#ffffff", fontSize: "12px", fontWeight: 600, cursor: isPushing ? "not-allowed" : "pointer" }}
           >
@@ -1401,18 +1427,7 @@ function OwnerWorkspace({
               
               <div>
                 <label style={{ color: theme.textMuted, display: "block", marginBottom: "0.3rem" }}>Ảnh đại diện</label>
-                <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán link ảnh hoặc chọn file từ máy..." style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
-                <input type="file" accept="image/*" style={{ marginTop: "6px" }} onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  try {
-                    const dataUrl = await fileToDataUrl(file);
-                    setForm({ ...form, imageUrl: dataUrl });
-                    toast.success("Đã tải ảnh lên thành công!");
-                  } catch {
-                    toast.error("Không nạp được ảnh từ máy tính.");
-                  }
-                }} />
+                <input value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="Dán link ảnh hoặc tải lên..." style={{ width: "100%", height: "42px", padding: "0 12px", borderRadius: "8px", background: theme.inputBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
               </div>
 
               <div>
@@ -1467,6 +1482,23 @@ function OwnerWorkspace({
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><Tag size={14} /> Tags hồ sơ</span>
                   <input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="ví dụ: mới ra lò, mềm, ấm áp" style={{ width: "100%", height: "40px", padding: "0 12px", borderRadius: "8px", marginTop: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain }} />
                 </label>
+
+                {systemAvailableTags.length > 0 && (
+                  <div style={{ marginTop: "0.6rem", borderTop: `1px dashed ${theme.inputBorder}`, paddingTop: "0.5rem" }}>
+                    <small style={{ color: theme.textMuted, display: "block", marginBottom: "0.4rem", fontSize: "11px" }}>Gợi ý tag đã có (Bấm để chọn nhanh):</small>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: ".35rem" }}>
+                      {systemAvailableTags.map((tagItem) => {
+                        const currentArr = form.tags.split(",").map(t => t.trim().toLowerCase());
+                        const isSelected = currentArr.includes(tagItem.toLowerCase());
+                        return (
+                          <button key={tagItem} type="button" onClick={() => toggleTagSelection(tagItem)} style={{ padding: "4px 10px", borderRadius: "6px", border: "1px solid", borderColor: isSelected ? "#a8d5ff" : theme.inputBorder, background: isSelected ? "rgba(168,213,255,.25)" : (isDark ? "rgba(255,255,255,.05)" : "#ffffff"), color: isSelected ? (isDark ? "#ffffff" : "#0c2c59") : theme.textMuted, fontSize: "11px", cursor: "pointer", transition: "all 0.15s" }}>
+                            {isSelected ? `✓ ${tagItem}` : `+ ${tagItem}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={{ padding: "0.9rem 1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}` }}>
@@ -1573,18 +1605,31 @@ function OwnerWorkspace({
                   <button type="button" onClick={handleResetDefaultTracks} className="secondary-button" style={{ fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMuted }}>Khôi phục gốc</button>
                 </div>
                 
-                <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
-                  <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                  <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                  <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn file (/audio/ten-file.mp3)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
-                  <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
-                </form>
+                {editingTrack ? (
+                  <form onSubmit={handleUpdateTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid #9ecaff`, marginBottom: "1.4rem" }}>
+                    <input required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Tên bài hát..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input value={editArtist} onChange={(e) => setEditArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="Đường dẫn file (/audio/...)" style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "0 1rem" }}>Lưu</button>
+                    <button type="button" className="secondary-button" onClick={() => setEditingTrack(null)} style={{ minHeight: "36px", borderColor: theme.cardBorder, color: theme.textMain, marginLeft: "8px" }}>Hủy</button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleAddNewTrack} style={{ padding: "1rem", background: theme.inputBg, borderRadius: "10px", border: `1px solid ${theme.inputBorder}`, marginBottom: "1.4rem" }}>
+                    <input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Tên bài hát mới..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input value={newArtist} onChange={(e) => setNewArtist(e.target.value)} placeholder="Nghệ sĩ..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <input required value={newUrl} onChange={(e) => setNewUrl(e.target.value)} placeholder="Đường dẫn (/audio/file.mp3)..." style={{ width: "100%", height: "38px", padding: "0 10px", borderRadius: "6px", background: theme.cardBg, border: `1px solid ${theme.inputBorder}`, color: theme.textMain, marginBottom: "8px" }} />
+                    <button type="submit" className="primary-button" style={{ width: "100%", minHeight: "38px" }}>Thêm bài hát</button>
+                  </form>
+                )}
 
                 <div style={{ display: "grid", gap: "0.5rem", maxHeight: "320px", overflowY: "auto" }}>
                   {tracks.map((track, index) => (
                     <div key={track.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: editingTrack?.id === track.id ? "rgba(173,214,255,.18)" : theme.inputBg, border: `1px solid ${theme.inputBorder}`, borderRadius: "8px" }}>
                       <span style={{ color: theme.textMain, fontSize: "12.5px" }}>0{index + 1}. {track.title}</span>
-                      <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button type="button" className="secondary-button" onClick={() => { setEditingTrack(track); setEditTitle(track.title); setEditArtist(track.artist || ""); setEditUrl(track.audioUrl); }} style={{ padding: "4px 8px", fontSize: "11px", borderColor: theme.cardBorder, color: theme.textMain }}>Sửa</button>
+                        <button type="button" className="secondary-button danger-text" onClick={() => handleDeleteTrack(track)} style={{ padding: "4px 8px", fontSize: "11px" }}>Xóa</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1598,6 +1643,7 @@ function OwnerWorkspace({
               </section>
             )}
 
+            {/* DANH SÁCH THỎ BÊN PHẢI */}
             {studioTab === "characters" && (
               <section className="inventory-card" style={{ background: theme.cardBg, borderColor: theme.cardBorder, borderRadius: "12px", padding: "1.4rem" }}>
                 <div className="editor-heading" style={{ marginBottom: "1rem" }}>
@@ -1667,53 +1713,31 @@ function ConfirmDeleteModal({ character, onClose, onConfirm }: { character: Char
   return <div className="modal-layer"><div className="modal-panel confirm-modal"><button className="icon-button modal-close" onClick={onClose} aria-label="Đóng"><X size={18} /></button><span className="eyebrow">studio / xác nhận</span><h2>Xóa {character?.name}?</h2><div className="editor-actions"><button className="secondary-button" onClick={onClose}>Giữ lại</button><button className="primary-button danger-button" onClick={onConfirm}>Xóa</button></div></div></div>;
 }
 
-// ==================== COMPONENT CHÍNH ====================
 export default function Home() {
   const [studioGate, setStudioGate] = useState(false); 
   const [studio, setStudio] = useState(false); 
   const [hasEntered, setHasEntered] = useState(false);
 
   const [characters, setCharacters] = useState<Character[]>(() => {
-    try {
-      const saved = localStorage.getItem("lalapine-custom-characters");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length) return parsed.map(sanitizeCharacter);
-      }
-    } catch {}
-    if (websiteData && Array.isArray(websiteData.characters) && websiteData.characters.length > 0) {
-      return websiteData.characters.map(sanitizeCharacter);
-    }
+    try { const saved = localStorage.getItem("lalapine-custom-characters"); if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed) && parsed.length) return parsed.map(sanitizeCharacter); } } catch {}
+    if (websiteData && Array.isArray(websiteData.characters) && websiteData.characters.length > 0) return websiteData.characters.map(sanitizeCharacter);
     return fallbackCharacters.map(sanitizeCharacter);
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
-    try {
-      const saved = localStorage.getItem("lalapine-custom-notifications");
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    if (websiteData && Array.isArray(websiteData.notifications) && websiteData.notifications.length > 0) {
-      return websiteData.notifications;
-    }
+    try { const saved = localStorage.getItem("lalapine-custom-notifications"); if (saved) return JSON.parse(saved); } catch {}
+    if (websiteData && Array.isArray(websiteData.notifications) && websiteData.notifications.length > 0) return websiteData.notifications;
     return [];
   });
 
   const [tracks, setTracks] = useState<Track[]>(() => {
-    try {
-      const saved = localStorage.getItem("lalapine-custom-tracks");
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    if (websiteData && Array.isArray((websiteData as any).tracks) && (websiteData as any).tracks.length > 0) {
-      return (websiteData as any).tracks;
-    }
+    try { const saved = localStorage.getItem("lalapine-custom-tracks"); if (saved) return JSON.parse(saved); } catch {}
+    if (websiteData && Array.isArray((websiteData as any).tracks) && (websiteData as any).tracks.length > 0) return (websiteData as any).tracks;
     return defaultTracks;
   });
 
   const [feedbacks, setFeedbacks] = useState<CharacterFeedback[]>(() => {
-    try {
-      const saved = localStorage.getItem("lalapine-custom-feedbacks");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    try { const saved = localStorage.getItem("lalapine-custom-feedbacks"); return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
 
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
@@ -1727,71 +1751,43 @@ export default function Home() {
     localStorage.setItem("lalapine-read-notifications", JSON.stringify(next));
   };
 
-  useEffect(() => {
-    async function loadGitHubFeedbacks() {
-      const gitFeedbacks = await fetchFeedbacksFromGitHub();
-      if (gitFeedbacks.length > 0) {
-        setFeedbacks(gitFeedbacks);
-        localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(gitFeedbacks));
-      }
-    }
-    loadGitHubFeedbacks();
-  }, []);
-
-  const handleCommitToGitHub = async () => {
-    const payload = {
-      characters: characters.map(sanitizeCharacter),
-      notifications: notifications,
-      tracks: tracks,
-    };
-    const success = await saveToGitHub(payload);
-    if (success) {
-      toast.success("Đã đẩy commit lên GitHub thành công! Vercel đang tự build lại web.", {
-        icon: <CheckCircle2 size={16} style={{ color: "#4ade80" }} />,
-        duration: 5000,
-      });
-    } else {
-      toast.error("Chưa đẩy được lên GitHub. Hãy kiểm tra biến VITE_GITHUB_TOKEN trên Vercel.");
-    }
-  };
-
-  const handleSaveCharacters = (newChars: Character[]) => {
-    const sanitized = newChars.map(sanitizeCharacter);
-    setCharacters(sanitized);
-    localStorage.setItem("lalapine-custom-characters", JSON.stringify(sanitized));
-  };
-
-  const handleSaveNotifications = (newNotifs: NotificationItem[]) => {
-    setNotifications(newNotifs);
-    localStorage.setItem("lalapine-custom-notifications", JSON.stringify(newNotifs));
-  };
-
-  const handleSaveTracks = (newTracks: Track[]) => {
-    setTracks(newTracks);
-    localStorage.setItem("lalapine-custom-tracks", JSON.stringify(newTracks));
-  };
+  const handleSaveCharacters = (newChars: Character[]) => { setCharacters(newChars.map(sanitizeCharacter)); localStorage.setItem("lalapine-custom-characters", JSON.stringify(newChars.map(sanitizeCharacter))); };
+  const handleSaveNotifications = (newNotifs: NotificationItem[]) => { setNotifications(newNotifs); localStorage.setItem("lalapine-custom-notifications", JSON.stringify(newNotifs)); };
+  const handleSaveTracks = (newTracks: Track[]) => { setTracks(newTracks); localStorage.setItem("lalapine-custom-tracks", JSON.stringify(newTracks)); };
 
   const handleAddFeedback = async (charId: number, charName: string, authorName: string, content: string) => {
-    const newFb: CharacterFeedback = {
-      id: `${Date.now()}`,
-      characterId: charId,
-      authorName,
-      content,
-      createdAt: new Date().toISOString()
-    };
+    const newFb: CharacterFeedback = { id: `${Date.now()}`, characterId: charId, authorName, content, createdAt: new Date().toISOString() };
     const nextList = [newFb, ...feedbacks];
     setFeedbacks(nextList);
     localStorage.setItem("lalapine-custom-feedbacks", JSON.stringify(nextList));
-    void postFeedbackToGitHub(charId, charName, authorName, content);
+  };
+
+  const handleCommitToGitHubDirectly = async (token: string): Promise<boolean> => {
+    const payload = { characters: characters.map(sanitizeCharacter), notifications, tracks };
+    const jsonString = JSON.stringify(payload, null, 2);
+    const base64Content = btoa(unescape(encodeURIComponent(jsonString)));
+    const getUrl = `https://api.github.com/repos/la-lapine/la-l4pine/contents/client/src/data/website_data.json`;
+    try {
+      const getRes = await fetch(getUrl, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" } });
+      let sha = "";
+      if (getRes.ok) {
+        const fileData = await getRes.json();
+        sha = fileData.sha;
+      }
+      const putRes = await fetch(getUrl, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/vnd.github.v3+json" },
+        body: JSON.stringify({ message: "🐰 Lưu trực tiếp từ Studio", content: base64Content, sha: sha || undefined })
+      });
+      return putRes.ok;
+    } catch { return false; }
   };
 
   useEffect(() => { 
     const handler = (event: KeyboardEvent) => { 
       const key = String(event.key || "").toLowerCase(); 
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && (key === "l" || event.code === "KeyL")) { 
-        event.preventDefault(); 
-        setStudio(false); 
-        setStudioGate(true); 
+        event.preventDefault(); setStudio(false); setStudioGate(true); 
       } 
     }; 
     window.addEventListener("keydown", handler, true); 
@@ -1800,44 +1796,22 @@ export default function Home() {
 
   return (
     <>
-      {!hasEntered && (
-        <StartScreen onStart={() => setHasEntered(true)} />
-      )}
-
+      {!hasEntered && <StartScreen onStart={() => setHasEntered(true)} />}
       {studio ? (
         <OwnerWorkspace 
-          characters={characters} 
-          onClose={() => setStudio(false)} 
-          onSaveCharacters={handleSaveCharacters} 
-          tracks={tracks}
-          onSaveTracks={handleSaveTracks}
-          notifications={notifications}
-          onSaveNotifications={handleSaveNotifications}
-          feedbacks={feedbacks}
-          onCommitToGitHub={handleCommitToGitHub}
+          characters={characters} onClose={() => setStudio(false)} onSaveCharacters={handleSaveCharacters} 
+          tracks={tracks} onSaveTracks={handleSaveTracks}
+          notifications={notifications} onSaveNotifications={handleSaveNotifications}
+          feedbacks={feedbacks} onCommitToGitHub={handleCommitToGitHubDirectly}
         />
       ) : (
         <PublicPage 
-          characters={characters} 
-          onStudio={() => setStudioGate(true)} 
-          tracks={tracks}
-          notifications={notifications}
-          readNotificationIds={readNotificationIds}
-          onMarkNotificationRead={markNotificationRead}
-          feedbacks={feedbacks}
-          onAddFeedback={handleAddFeedback}
+          characters={characters} onStudio={() => setStudioGate(true)} 
+          tracks={tracks} notifications={notifications} readNotificationIds={readNotificationIds} 
+          onMarkNotificationRead={markNotificationRead} feedbacks={feedbacks} onAddFeedback={handleAddFeedback}
         />
       )}
-      
-      {studioGate && !studio && (
-        <AdminGate 
-          onClose={() => setStudioGate(false)} 
-          onUnlock={() => { 
-            setStudioGate(false); 
-            setStudio(true); 
-          }} 
-        />
-      )}
+      {studioGate && !studio && <AdminGate onClose={() => setStudioGate(false)} onUnlock={() => { setStudioGate(false); setStudio(true); }} />}
     </>
   );
 }
