@@ -935,7 +935,7 @@ function PublicPage({
       </div>
 
       {showNotifications && (
-        <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={markNotificationRead} onClose={() => setShowNotifications(false)} />
+        <NotificationModal notifications={notifications} readIds={readNotificationIds} onRead={onMarkNotificationRead} onClose={() => setShowNotifications(false)} />
       )}
     </>
   );
