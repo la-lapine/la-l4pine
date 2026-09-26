@@ -88,7 +88,7 @@
       "accessTitle": "Mừng sinh nhật cha dấu yêu! Mong chúng ta đừng quên đi \"gốc gác\" của mình.",
       "passwordProtected": 1,
       "password": "300579Korolyov",
-      "passwordHint": "Số - chữ (ABACEDChữ), không cách, không dấu câu, 1 chữ hoa. Gốc này không cần nước,",
+      "passwordHint": "Số - chữ, cú pháp: ABBCEDGốc. Gốc = họ. Không cách, không dấu, 1 chữ hoa.",
       "titleColor": "#eff8ff",
       "bodyColor": "#9db8d4",
       "colorSync": 1,
